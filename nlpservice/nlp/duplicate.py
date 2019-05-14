@@ -15,7 +15,9 @@ def intercluster_similarity(vectors):
     #        [0.91721904, 1.        , 0.9095948 ],
     #        [0.9417081 , 0.9095948 , 1.        ]], dtype=float32)
 
-    return np.mean(simil)       # TODO: should do a smarter job
+    score = np.mean(simil[np.asarray(simil != 1)])
+
+    return score
 
 
 def duplicate_detection(text):
