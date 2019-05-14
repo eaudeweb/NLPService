@@ -2,26 +2,27 @@
   <v-container grid-list-md>
     <v-layout row wrap>
       <v-flex xs12 md12>
-      <h2 class="headline font-weight-bold mb-3">Similarity</h2>
+      <h2 class="headline font-weight-bold mb-3">Sentence duplicates detection</h2>
       </v-flex>
 
       <v-flex xs12 md6>
         <v-sheet color="green lighten-3" elevation="1" min-height="10em">
-          <h4>Base text (one sentence per line)</h4>
-          <v-textarea v-model="base"></v-textarea>
+          <h4>Enter text (one sentence per line)</h4>
+          <v-textarea v-model="text"></v-textarea>
         </v-sheet>
       </v-flex>
 
       <v-flex xs12 md6>
         <v-sheet color="purple lighten-3" elevation="1" min-height="10em">
-          <h4>Proba text (one sentence per line)</h4>
-          <v-textarea v-model="proba"></v-textarea>
+          <h4>Duplicates</h4>
+          <template v-for="sent in sentences">
+            <sentence :sent="sent"></sentence>
+          </template>
         </v-sheet>
       </v-flex>
 
       <v-flex xs12 md12>
         <v-btn primary @click="submit">Submit</v-btn>
-        <h2 v-if="score" class='text-align-center'>{{score}}</h2>
       </v-flex>
 
     </v-layout>
@@ -29,28 +30,28 @@
 </template>
 <script>
   import axios from 'axios'
+  import Sentence from './Sentence'
 
   export default {
     components: {
+      Sentence,
     },
     data () {
       return {
-        'base': '',
-        'proba': '',
-        'score': null,
+        'text': '',
+        'sentences': [],
       }
     },
     methods: {
       submit() {
         axios
-          .post('http://localhost:6543/similarity',
+          .post('http://localhost:6543/duplicates',
             {
-              'base': this.base,
-              'proba': this.proba,
+              'text': this.text,
             })
           .then((resp) => {
-            this.score = resp.data.result
             console.log(resp)
+            this.sentences = resp.data.result
           })
       }
     }
@@ -58,4 +59,5 @@
 </script>
 <style>
 </style>
+
 

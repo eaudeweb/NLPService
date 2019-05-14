@@ -86,7 +86,7 @@
         axios
           .post('http://localhost:6543/summarize', {'text': this.text})
           .then((resp) => {
-            let data = resp.data.summary
+            let data = resp.data.result
             this.summary = data.preview
             this.clusters = data.sentences
             console.log(resp)

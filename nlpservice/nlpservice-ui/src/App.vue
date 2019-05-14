@@ -7,6 +7,9 @@
       </v-toolbar-title>
       <v-spacer></v-spacer>
       <v-btn flat>
+        <router-link to="/duplicate">Duplicate</router-link>
+      </v-btn>
+      <v-btn flat>
         <router-link to="/similarity">Similarity</router-link>
       </v-btn>
       <v-btn flat>
@@ -17,6 +20,7 @@
     <v-content>
       <router-view></router-view>
     </v-content>
+
   </v-app>
 </template>
 

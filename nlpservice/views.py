@@ -5,6 +5,7 @@ from colander import Int, Length, MappingSchema, SchemaNode, String
 from cornice import Service
 from cornice.validators import colander_body_validator
 
+from .nlp.duplicate import duplicate_detection
 from .nlp.similarity import semantic_similarity
 from .nlp.summarize import summarize_text
 
@@ -18,10 +19,11 @@ def get_info(request):
     return {'Hello': 'World'}
 
 
-summarize = Service(name='summarize', path='/summarize',
-                    description='Simple text summarization service',
-                    cors_enabled=True, cors_origins="*",
-                    )
+summarize = Service(
+    name='summarize', path='/summarize',
+    description='Simple text summarization service',
+    cors_enabled=True, cors_origins="*",
+)
 
 
 class SummarizeSchema(MappingSchema):
@@ -38,14 +40,15 @@ def summarize_text_view(request):
     summary = summarize_text(text)
 
     return {
-        'summary': summary
+        'result': summary
     }
 
 
-similarity = Service(name='similarity', path='/similarity',
-                     description='Simple text similarity service',
-                     cors_enabled=True, cors_origins="*",
-                     )
+similarity = Service(
+    name='similarity', path='/similarity',
+    description='Simple text similarity service',
+    cors_enabled=True, cors_origins="*",
+)
 
 
 class SimilaritySchema(MappingSchema):
@@ -67,5 +70,31 @@ def similarity_text_view(request):
     score = semantic_similarity(base, proba)
 
     return {
-        'score': str(score)
+        'result': str(score)
+    }
+
+
+# This doesn't handle duplicates, only sentences
+duplicate = Service(
+    name='duplicates', path='/duplicates',
+    description='Simple sentence duplicate detection service',
+    cors_enabled=True, cors_origins="*",
+)
+
+
+class DuplicateSchema(MappingSchema):
+    text = SchemaNode(
+        String(encoding='utf-8', allow_empty=False),
+        validator=Length(min=100, max=10000)
+    )
+
+
+@duplicate.post(schema=DuplicateSchema, validators=(colander_body_validator))
+def duplicate_text_view(request):
+    text = request.validated['text']
+
+    duplicates = duplicate_detection(text)
+
+    return {
+        'result': duplicates
     }

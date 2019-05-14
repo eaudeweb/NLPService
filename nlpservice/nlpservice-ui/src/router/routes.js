@@ -1,5 +1,6 @@
 import Start from '../components/Start'
-import Summarize from '../components/Summarize'
+import Summarize from '../components/summarize/Main'
+import Duplicate from '../components/duplicate/Main'
 import Similarity from '../components/Similarity'
 
 const routes = [
@@ -14,6 +15,10 @@ const routes = [
   {
     path: '/similarity',
     component: Similarity,
+  },
+  {
+    path: '/duplicate',
+    component: Duplicate,
   },
 ]
 
