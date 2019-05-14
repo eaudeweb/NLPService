@@ -6,12 +6,11 @@
         <span class="font-weight-light">quick demo</span>
       </v-toolbar-title>
       <v-spacer></v-spacer>
-      <v-btn
-        flat
-        href="https://eaudeweb.ro"
-        target="_blank"
-        >
-        <span class="mr-2">NLP Service</span>
+      <v-btn flat>
+        <router-link to="/similarity">Similarity</router-link>
+      </v-btn>
+      <v-btn flat>
+        <router-link to="/summarize">Summarize</router-link>
       </v-btn>
     </v-toolbar>
 
