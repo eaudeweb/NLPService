@@ -44,12 +44,17 @@ def summarize_text(text, target_len=None, keep=None):
         'sentences': [],
     }
 
+    clusters = [[] for __ in range(target_len)]
+
     for i, sent in enumerate(sentences):
         line = {
             'text': sent,
             'is_summary': i in closest,
             'keep': i in keep,
         }
-        summary['sentences'].append(line)
+        c = int(k_model.labels_[i])
+        clusters[c].append(line)
+
+    summary['sentences'] = clusters
 
     return summary

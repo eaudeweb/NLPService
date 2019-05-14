@@ -33,7 +33,6 @@ def load_use(path):
 MODELS = {
     'UniversalSentenceEncoder':
     ('https://tfhub.dev/google/universal-sentence-encoder-large/3', load_use),
-    # 'https://tfhub.dev/google/universal-sentence-encoder/3',
 }
 
 
