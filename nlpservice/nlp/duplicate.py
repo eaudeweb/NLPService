@@ -15,7 +15,8 @@ def intercluster_similarity(vectors):
     #        [0.91721904, 1.        , 0.9095948 ],
     #        [0.9417081 , 0.9095948 , 1.        ]], dtype=float32)
 
-    score = np.mean(simil[np.asarray(simil != 1)])
+    np.fill_diagonal(simil, 0)
+    score = np.mean(simil[simil > 0])
 
     return score
 

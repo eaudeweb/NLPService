@@ -13,6 +13,7 @@ install_requires = [
     'waitress',
     'tensorflow-hub',
     'colander',
+    'scipy',
 ]
 
 
