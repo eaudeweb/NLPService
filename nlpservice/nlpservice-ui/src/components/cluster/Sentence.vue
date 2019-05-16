@@ -2,9 +2,11 @@
   <div :class="cssClass">
     <v-tooltip bottom>
       <template v-slot:activator="{ on }">
-        <span v-on="on">{{ sent.topic }}</span>
+        <v-chip v-on="on" small dark>
+          {{ sent.seed }}
+        </v-chip>
       </template>
-      <span>{{ sent.seed }}</span>
+      <span >{{ sent.topic }}</span>
     </v-tooltip>
     {{ sent.text }}
   </div>
