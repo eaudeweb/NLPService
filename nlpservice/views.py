@@ -5,7 +5,7 @@ from colander import Int, Length, MappingSchema, SchemaNode, String
 from cornice import Service
 from cornice.validators import colander_body_validator
 
-# from .nlp.cluster import clusterize_by_topics
+from .nlp.cluster import clusterize_by_topics
 from .nlp.duplicate import duplicate_detection
 from .nlp.similarity import semantic_similarity
 from .nlp.summarize import summarize_text
@@ -100,33 +100,38 @@ def duplicate_text_view(request):
         'result': duplicates
     }
 
-#
-# # This doesn't handle duplicates, only sentences
-# clusterize = Service(
-#     name='clusterize', path='/clusterize',
-#     description='Clusterize sentences according to seed topics',
-#     cors_enabled=True, cors_origins="*",
-# )
-#
-#
-# class ClusterizeSchema(MappingSchema):
-#     text = SchemaNode(
-#         String(encoding='utf-8', allow_empty=False),
-#         validator=Length(min=100, max=10000)
-#     )
-#     topics = SchemaNode(
-#         String(encoding='utf-8', allow_empty=False),
-#         validator=Length(min=100, max=10000)
-#     )
-#
-#
-# @clusterize.post(schema=ClusterizeSchema, validators=(colander_body_validator))
-# def clusterize_text_view(request):
-#     text = request.validated['text']
-#     topics = request.validated['topics']
-#
-#     clusters = clusterize_by_topics(text, topics)
-#
-#     return {
-#         'result': clusters
-#     }
+
+clusterize = Service(
+    name='clusterize', path='/clusterize',
+    description='Clusterize sentences according to seed topics',
+    cors_enabled=True, cors_origins="*",
+)
+
+
+class ClusterizeSchema(MappingSchema):
+    text = SchemaNode(
+        String(encoding='utf-8', allow_empty=False),
+        validator=Length(min=100, max=10000)
+    )
+    topics = SchemaNode(
+        String(encoding='utf-8', allow_empty=False),
+        validator=Length(min=10, max=10000)
+    )
+
+
+@clusterize.post(schema=ClusterizeSchema, validators=(colander_body_validator))
+def clusterize_text_view(request):
+    text = request.validated['text']
+    topics = request.validated['topics']
+
+    st = []
+
+    for t in topics.split('\n'):
+        ts = [x.strip() for x in t.split(',')]
+        st.append(ts)
+
+    clusters = clusterize_by_topics(text, st)
+
+    return {
+        'result': clusters
+    }

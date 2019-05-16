@@ -6,6 +6,10 @@
         <span class="font-weight-light">quick demo</span>
       </v-toolbar-title>
       <v-spacer></v-spacer>
+
+      <v-btn flat>
+        <router-link to="/clusterize">Clusterize</router-link>
+      </v-btn>
       <v-btn flat>
         <router-link to="/duplicate">Duplicate</router-link>
       </v-btn>
@@ -15,6 +19,7 @@
       <v-btn flat>
         <router-link to="/summarize">Summarize</router-link>
       </v-btn>
+
     </v-toolbar>
 
     <v-content>
