@@ -14,6 +14,12 @@ install_requires = [
     'tensorflow-hub',
     'colander',
     'scipy',
+
+    # text cleanup utilities
+    'textacy',
+    'ftfy',
+    'syntok',
+    'truecase',
 ]
 
 
