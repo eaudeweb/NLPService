@@ -262,7 +262,24 @@ def fix_sentences(text):
     return out
 
 
+def fix_acronyms(text):
+    # TODO: should remove the initial definition.
+    # for ex: Indicator of Compromise (IoC) gets translated into
+    # IndicatorOfCompromise (IndicatorOfCompromise)
+    # probably this can be fixed by replacing "full", but needs window check
+    doc = tc.make_spacy_doc(text)
+    acros = tc.extract.acronyms_and_definitions(doc)
+
+    for short, full in acros.items():
+        label = "".join([t.title() for t in full.split(' ')])
+        text = text.replace(full, label)
+        text = text.replace(short, label)
+
+    return text
+
+
 FILTERS = [
+    fix_acronyms,
     tc.preprocess.normalize_whitespace,
     tc.preprocess.replace_urls,
     tc.preprocess.replace_emails,
