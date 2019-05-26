@@ -5,9 +5,9 @@ from colander import Int, Length, MappingSchema, SchemaNode, String
 from cornice import Service
 from cornice.validators import colander_body_validator
 
-from .nlp.cleanup import clean
 from .nlp.cluster import clusterize_by_topics
 from .nlp.duplicate import duplicate_detection
+from .nlp.prepare import clean
 from .nlp.similarity import semantic_similarity
 from .nlp.summarize import summarize_text
 
@@ -138,26 +138,26 @@ def clusterize_text_view(request):
     }
 
 
-cleanup = Service(
-    name='cleanup', path='/cleanup',
-    description='Cleanup text to be further processed',
+prepare = Service(
+    name='prepare', path='/prepare',
+    description='Prepare text to be further processed. Mostly cleanup.',
     cors_enabled=True, cors_origins="*",
 )
 
 
-class CleanupSchema(MappingSchema):
+class PrepareSchema(MappingSchema):
     text = SchemaNode(
         String(encoding='utf-8', allow_empty=False),
         validator=Length(min=10, max=100000)
     )
 
 
-@cleanup.post(schema=CleanupSchema, validators=(colander_body_validator))
-def cleanup_text_view(request):
+@prepare.post(schema=PrepareSchema, validators=(colander_body_validator))
+def prepare_text_view(request):
     text = request.validated['text']
 
     result = clean(text)
 
     return {
-        'result': result
+        'result': result,
     }
