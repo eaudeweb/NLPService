@@ -1,9 +1,8 @@
 import re
 
 import ftfy
-import textacy as tc
-
 import syntok.segmenter as segmenter
+import textacy as tc
 
 MAL_URL_RE = 'hxxp:\/\/(.+)[\b|\s|$]'
 SHA256_RE = '[A-Fa-f0-9]{64}'
@@ -21,7 +20,7 @@ VERS_RE = [
 
 def fix_versions(text):
     for r in VERS_RE:
-        text = re.sub(r, '*VERSION*', text)
+        text = re.sub(r, 'VERSIONID', text)
 
     return text
 
@@ -29,13 +28,13 @@ def fix_versions(text):
 def fix_mal_url(text):
     # TODO: this is simplistic, should copy regexp from textacy
 
-    return re.sub(MAL_URL_RE, '*MALURL*', text)
+    return re.sub(MAL_URL_RE, 'MALURL', text)
 
 
 def fix_sha(text):
-    text = re.sub(SHA256_RE, '*MD5HASH*', text)
-    text = re.sub(SHA1_RE, '*MD5HASH*', text)
-    text = re.sub(MD5_RE, '*MD5HASH*', text)
+    text = re.sub(SHA256_RE, 'MD5HASH', text)
+    text = re.sub(SHA1_RE, 'MD5HASH', text)
+    text = re.sub(MD5_RE, 'MD5HASH', text)
 
     return text
 
@@ -43,7 +42,7 @@ def fix_sha(text):
 def num_match(m):
     g = m.group(0)
 
-    return '*NUMBER* *{}DIGITS*'.format(len(g))
+    return 'DIGNR DIG{}ITS'.format(len(g))
 
 
 def fix_numbers(text):
@@ -232,9 +231,9 @@ def fix_kb(text):
     # TODO: better handling of MS_TERMS
 
     for t in MS_TERMS:
-        text = text.replace(t, '*MSQUERYTERM*')
-    text = re.sub(KB_RE, '*MSKB*', text)
-    text = re.sub(MS_RE, '*MSBULLETIN*', text)
+        text = text.replace(t, 'MSQUERYTERM')
+    text = re.sub(KB_RE, 'MSKBID', text)
+    text = re.sub(MS_RE, 'MSBULLETINID', text)
 
     return text
 
@@ -243,7 +242,7 @@ CVE_RE = re.compile(r'CVE-\d{4}-\d{4,7}')
 
 
 def fix_cve(text):
-    return re.sub(CVE_RE, '*CVE*', text)
+    return re.sub(CVE_RE, 'CVEID', text)
 
 
 def fix_sentences(text):
@@ -258,7 +257,6 @@ def fix_sentences(text):
                 # separating tokens by single spaces
                 out += token.value + ' '
             out += '\n'  # print one sentence per line
-        print()  # separate paragraphs with newlines
         out += '\n'
 
     return out
