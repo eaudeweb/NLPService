@@ -3,8 +3,9 @@ import re
 import ftfy
 import syntok.segmenter as segmenter
 import textacy as tc
+from nltk.corpus import stopwords
 
-MAL_URL_RE = 'hxxp:\/\/(.+)[\b|\s|$]'
+MAL_URL_RE = 'hxxp:\/\/(.+)[\b|\s|$]'       # TODO: needs improvements
 SHA256_RE = '[A-Fa-f0-9]{64}'
 SHA1_RE = '[A-Fa-f0-9]{40}'
 MD5_RE = '[A-Fa-f0-9]{32}'
@@ -16,6 +17,21 @@ VERS_RE = [
     '\d{2}\.\d\.\d{2}',     # 11.0.14
     '\d+\.\d\.\d+'          # 11.0.14
 ]
+
+# KnowledgeBase number such as KB4493730
+KB_RE = re.compile(r'KB\d+')
+
+# MS Security buletin such as MS16-010
+MS_RE = re.compile(r'MS\d{2}-\d{3,5}')
+
+CVE_RE = re.compile(r'CVE-\d{4}-\d{4,7}')
+
+
+stops = set(stopwords.words('english'))
+
+
+def remove_stopwords(tokens):
+    return [x for x in tokens if x not in stops]
 
 
 def fix_versions(text):
@@ -32,9 +48,9 @@ def fix_mal_url(text):
 
 
 def fix_sha(text):
-    text = re.sub(SHA256_RE, 'MD5HASH', text)
-    text = re.sub(SHA1_RE, 'MD5HASH', text)
-    text = re.sub(MD5_RE, 'MD5HASH', text)
+    text = re.sub(SHA256_RE, 'MD5HASHID', text)
+    text = re.sub(SHA1_RE, 'MD5HASHID', text)
+    text = re.sub(MD5_RE, 'MD5HASHID', text)
 
     return text
 
@@ -77,7 +93,7 @@ kbRegistry	Windows registry
 kbRPC	Remote procedure calls
 kbSafeMod	Safe Mode
 kbScanDisk	Microsoft ScanDisk
-kbshell	The Windows shell that lets users group-start and otherwise control applications
+kbshell	The Windows shell that lets users group-start and otherwise control
 kbsound	Sound/audio
 kbSysPrepTool	Microsoft Systems Preparation Tool
 kbSysSettings	Operating system setup and registry settings
@@ -106,7 +122,7 @@ kbwizard	Using wizards
 atDownload	Contains a software update download
 Kbqfe	Contains a hotfix
 kbhowto	Describes a feature or describes how to perform a task
-kbtshoot	Describes a problem or bug, how to fix a problem or bug, or for content about a virus
+kbtshoot	Describes a problem or bug, how to fix a problem or bug, or for
 KbSECBulletin	Security bulletins
 kbSecurity	Security
 KbSECVulnerability	Known software vulnerabilities
@@ -139,7 +155,7 @@ kbJET	JET database
 kbOracle	Oracle products and technologies
 kbActivexEvents	COM Events
 kbActiveXScript	ActiveX Scripting
-kbAPI	Application Programming Interface (API), must have another keyword in article to specify which API's are discussed
+kbAPI	Application Programming Interface (API), must have another keyword in
 kbCompiler	Compiler
 kbCOMPlusLCE	COM+ Loosely Coupled Events
 kbComPlusQC	COM+ Queued Components
@@ -154,7 +170,7 @@ kbJava	Java programming/usage
 kbJavaFAQ	Java Technologies frequently asked questions
 kbJDBC	Java Database Connectivity
 kbJNative	Native Java method
-kbmacro	About an issue with the macro recorder or includes steps that use the macro recorder to create a macro.
+kbmacro	About an issue with the macro recorder or includes steps that use the
 kbMSHTML	Microsoft HTML Rendering Control
 kbProgramming	Programming
 kbRemoting	.NET Framework remoting namespace objects and classes
@@ -220,12 +236,6 @@ msn_bookshelf	Information that is related to Bookshelf on MSN"""
 
 MS_TERMS = [t.split('\t')[0].strip() for t in _MS_TERMS.split('\n')]
 
-# KnowledgeBase number such as KB4493730
-KB_RE = re.compile(r'KB\d+')
-
-# MS Security buletin such as MS16-010
-MS_RE = re.compile(r'MS\d{2}-\d{3,5}')
-
 
 def fix_kb(text):
     # TODO: better handling of MS_TERMS
@@ -236,9 +246,6 @@ def fix_kb(text):
     text = re.sub(MS_RE, 'MSBULLETINID', text)
 
     return text
-
-
-CVE_RE = re.compile(r'CVE-\d{4}-\d{4,7}')
 
 
 def fix_cve(text):
@@ -278,8 +285,31 @@ def fix_acronyms(text):
     return text
 
 
+def text_tokenize(text):
+    """ breaks down the text to basic bits for a space-based tokenizer
+
+    :param text: a text document
+    :returns: a list of sentences, each its own list of tokens
+    """
+
+    text = clean(text)
+    text = text.lower()
+    text = tc.preprocess.remove_punct(text)
+    text = tc.preprocess.replace_numbers(text, 'dignr')
+
+    sentences = []
+
+    for line in text.splitlines():
+        tokens = remove_stopwords([t for t in line.split(' ') if len(t) > 1])
+
+        if tokens:
+            sentences.append(tokens)
+
+    return sentences
+
+
 FILTERS = [
-    fix_acronyms,
+    # fix_acronyms,
     tc.preprocess.normalize_whitespace,
     tc.preprocess.replace_urls,
     tc.preprocess.replace_emails,
