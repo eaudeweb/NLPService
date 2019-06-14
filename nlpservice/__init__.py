@@ -1,7 +1,9 @@
-"""Main entry point
+""" Main pyramid entry point, console utils
 """
+
 import os
 
+import click
 from pyramid.config import Configurator
 
 

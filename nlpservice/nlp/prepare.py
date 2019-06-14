@@ -1,9 +1,17 @@
+import itertools
+import logging
 import re
+from pathlib import Path
 
+import click
 import ftfy
 import syntok.segmenter as segmenter
 import textacy as tc
 from nltk.corpus import stopwords
+
+from .utils import get_es_records
+
+logger = logging.getLogger(__name__)
 
 MAL_URL_RE = 'hxxp:\/\/(.+)[\b|\s|$]'       # TODO: needs improvements
 SHA256_RE = '[A-Fa-f0-9]{64}'
@@ -331,3 +339,44 @@ def clean(text, filters=FILTERS):
         text = f(text)
 
     return text
+
+
+@click.command()
+@click.argument('output')
+@click.option('--es-url',
+              default='http://localhost:9200/content',
+              help='ElasticSearch index URL location')
+@click.option('--count',
+              default=0,
+              help='How many documents to process')
+def main(output, es_url, count):
+    """ Download and clean documents from ES, writes cleaned to output location
+
+    Output is a text file, with one sentence per line
+    """
+
+    logging.basicConfig()
+    logger.setLevel(logging.INFO)
+
+    fields = ['title', 'content']
+    docs = get_es_records(es_url)
+
+    if count:
+        docs = itertools.islice(docs, 0, count)
+
+    out = Path(output)
+
+    i = 0
+    with out.open('w') as outf:
+        for rec in docs:
+            i += 1
+            texts = [rec[f].strip() for f in fields]
+            doc = ".\n".join(texts)
+
+            lines = [" ".join(sent) for sent in text_tokenize(doc)]
+            outf.write("\n".join(lines))
+            outf.write('\n\n')
+
+    logger.info("Processed %s documents", i)
+
+    return str(out)

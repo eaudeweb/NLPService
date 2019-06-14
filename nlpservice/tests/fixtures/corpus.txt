@@ -1,0 +1,100 @@
+qadars trojan returns bigger badder ever
+criminal group behind qadars banking trojan launched v3 malware year month seems focused targeting clients dignr banks uk according recent report ibm force team
+qadars one lesser known banking trojans dangerous famous counterparts dridex ursnif ramnit neverquest shifu others
+first version trojan appeared dignr mainly targeted countries netherlands france italy
+qadars v2 came dignr time trojan busy targeting banks users australia canada us netherlands
+view full story original source softpedia
+
+russian cyberspies use komplex trojan target os systems
+researchers palo alto networks come across os trojan believe used notorious russia linked cyber espionage group attacks aimed aerospace industry
+view full story original source security week
+
+l3 strengthens intel collection surveil capabilities learn
+news articles cyber security information security vulnerabilities exploits patches releases software features hacks laws spam viruses malware trojans
+l3 technologies entered definitive agreement acquire azimuth security linchpin labs two information
+
+nist calls comment ecommerce security ncco subdivision national institute standards technology nist announced accepting feedback draft exploring ways multi factor authentication help mitigate fraudulent online purchases
+case europe retailers adopted
+
+recently leaked malware source code carbanak
+previous statements claimed carbanak source code leaked recently
+kaspersky lab analysis however reveals code belongs another piece financial malware called karamanak pegasus ratopak confused pegasus os spyware
+timestamps suggest source code produced dignr dignr
+
+intelligence sharing moral responsibility say security professionals
+alien vault leading provider unified security management usm crowd sourced threat intelligence today released results study looks current state threat intelligence
+alien vault polled dignr security professionals black hat dignr learn security teams changed last two years security landscape evolved past dignr months incorporating threat intelligence malware defence strategies
+investment security teams rise threats escalate majority respondents dignr stated last two years security teams increased size
+overly surprising research showing increased investment security encouraging sign considering security skills shortage plagued industry years
+shedding light one driving forces behind increase security teams half survey participants dignr reported increase security incidents past year
+threat intelligence moral obligation overwhelming majority respondents dignr believe security industry moral responsibility share threat intelligence
+although requirement mandate companies many security professionals feel observe active exploit duty share others
+view key reason threat intelligence helps organisations enhance threat detection incident response rapidly recognised critical aspect security organisations vendors
+organisations backing belief action
+overwhelming dignr survey respondents use threat intelligence way
+range threat intelligence sources still increasing survey respondents rely range threat intelligence sources including detection processes dignr trusted peers dignr paid subscription services dignr government agencies dignr crowdsourced open source communities dignr blogs online forums dignr
+survey results line years past
+alien vault asked question black hat dignr rsa dignr
+results survey show year year range threat intelligence sources companies rely consistently increased
+one reasons wide range threat intelligence additive nature
+company rely primarily internal detection processes complement method sources government feed pulling data crowdsourced platform little overlap data obtained
+referencing threat intelligence sources company gain comprehensive view overall threat landscape
+rise crowdsourced platforms threat intelligence sharing security professionals stated share threat intelligence trusted peers dignr internally dignr government agencies dignr publicly dignr crowdsourced open source platforms dignr
+compared responses black hat dignr info sec dignr question asked gradual increase number respondents sharing threat data publicly well trusted peers
+largest jump adoption crowdsourced platforms threat intelligence sharing increased almost five times since last year
+trend continue escalate confidence threat sharing platforms increases trusted peer groups security professionals expands
+nature security industry extremely secretive encouraging see people utilizing different sources willing openly share threat intelligence said javvad malik security advocate alien vault
+malicious criminals innovate quickly industry achieve similar level agility cooperation collaboration create powerful collective defense today advanced threats
+public threat intelligence sources alien vault open threat exchange enable even smallest departments leverage collective knowledge global network security experts better identify respond mitigate threats
+hope see continued trust sources
+additional resources
+
+500m yahoo accounts hacked dignr company confirms
+one biggest data breaches time yahoo said dignr million user accounts may hacked
+data breach happened dignr likely conducted attack orchestrated state sponsored organisation firm said statement account information may included names email addresses telephone numbers dates birth hashed passwords vast majority bcrypt cases encrypted unencrypted security questions answers company wrote
+investigation company says state sponsored actor longer company network working law enforcement officials try resolve issue
+view full story original source wired
+
+cctvs cannot substitutepublic cooperation co stating installation closed circuit television cameras cctvs become inevitable prevention detection crime commissioner police davidson devasirvatham however stressed cannot become substitutes public cooperation intelligence gathering
+
+google finds flaw android fortnite installer leading malware installation
+another day another fortnite malware vulnerability
+epic games decision skipping google play store releasing android fortnite official website directly perceived unwise move
+recently informed readers salient repercussions decision
+
+usd80 million yahoo
+settles shareholder class action claiming stock price losses data breaches
+first notable resolution data breach related securities fraud case federal court preliminarily approved yahoo usd80 million settlement based multiple hacking incidents
+yahoo suffered two cyber attacks dignr dignr compromised personal information billions users
+
+dignr european ceos taking responsibility cyber security
+half dignr percent ceos european companies taking responsibility cyber security considered executive responsibility
+new research lloyds london discovered although cyber top boardroom agenda many still underestimate potential impact cyber attack data breach
+dignr percent european companies believing lose trade cyber attack occurs despite recent high profile data breaches
+survey collected responses nearly dignr senior business decision makers across europe included dignr uk businesses
+view full story original source sc magazine
+
+employee access social media poses biggest internal security threat organisations organised cybercrime poses biggest external threat new research reveals
+employee access social media dignr bring device work dignr considered biggest obstacles preventing security breaches fraud according fraud prevention managers directors
+biggest fraud prevention priority majority organisations creating fraud aware culture dignr
+yet also considered hardest priority address dignr
+survey dignr fraud prevention managers directors commissioned callcredit information group found staggering dignr uk organisations already affected fraud
+findings research trends identified included john cannon director fraud id callcredit information group commented fraud society grows geographically mobile individuals increasingly need establish digital identity pressure fraud risk professionals protect organisations consumers mounts
+research reveals half organisations affected fraud demonstrating fraud prevention one biggest risk concerns facing global boardrooms
+cannon concluded whilst fraud professionals might confident abilities prevent deal potential breach research suggests employees need much education risks
+explaining threats giving suggestions protect informing ways spot breach could instrumental protecting company cybercrime
+organisations strong weakest link entire workforce needs understand cyber vulnerabilities order prevent
+research report launched today callcredit 10th annual fraud summit
+event bring together industry leaders including sir john scarlett kcmg obe former chief british secret intelligence sandra peaston assistant director insight cifas uk debate industry hot topics future digital identity cyber security biometrics personal information economy
+
+anti trump dossier heading toward trial
+washington times first face face encounter anti trump dossier publisher ben smith one targets russian entrepreneur aleksej gubarev set happen last month new york city law office
+mr gubarev arrived attorneys sued buzz feed mr
+
+ocsi certifies safe net luna pcie cryptographic module use qsig cd
+originally published italian organismo di certificazione della sicurezza informatica ocsi certified safe net luna pcie cryptographic module dignr dignr dignr embedded within safe net luna network hsm dignr safe net luna hsm dignr use qualified electronic signature creation device
+
+healthcare safe public cloud
+several press reports claim nhs digital recognises public cloud services safe way storing health social care patient data
+january dignr uk national health service digital body press statement cited rob shaw deputy chief executive nhs digital
+
