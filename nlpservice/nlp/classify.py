@@ -5,6 +5,7 @@ import click
 import numpy as np
 import requests
 from gensim.models import FastText
+from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
 from tensorflow.keras import optimizers, regularizers
 from tensorflow.keras.callbacks import EarlyStopping
@@ -12,6 +13,7 @@ from tensorflow.keras.layers import (Conv1D, Dense, Dropout, Embedding,
                                      GlobalMaxPooling1D, MaxPooling1D)
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.preprocessing.sequence import pad_sequences
+from tensorflow.keras.utils import to_categorical
 
 from .prepare import clean
 from .utils import lemmatize_kg_terms
@@ -70,13 +72,21 @@ def docs_to_dtm(docs, vocab, maxlen):
 
 def train_classifier(kvmodel, docs, lemmatized_kg):
     embeddings = kvmodel.wv.vectors
-    EMB_DIM = 200    # word embedding dimmension
+    EMB_DIM = embeddings.shape[1]    # word embedding dimmension
     VOCAB_SIZE = len(embeddings) + len(SPECIAL_TOKENS)
     fill = np.zeros((len(SPECIAL_TOKENS), EMB_DIM))
     emb_vectors = np.vstack((fill, embeddings))
 
     MAX_LEN = 300      # Max length of text sequences
     X, y = prepare_corpus(docs, lemmatized_kg)
+
+    # one-hot encode labels
+    sle = preprocessing.LabelEncoder()
+    top_labels = lemmatized_kg.keys()
+    sle.fit(list(top_labels))
+    y = sle.transform(y)
+    y = to_categorical(y, num_classes=len(top_labels))
+
     X = docs_to_dtm(X, vocab=kvmodel.wv.index2word, maxlen=MAX_LEN)
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3,
