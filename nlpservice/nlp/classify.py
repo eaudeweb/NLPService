@@ -15,7 +15,7 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.utils import to_categorical
 
-from .prepare import clean
+from .prepare import clean, text_tokenize
 from .utils import lemmatize_kg_terms
 
 logger = logging.getLogger(__name__)
@@ -70,12 +70,38 @@ def docs_to_dtm(docs, vocab, maxlen):
     return X
 
 
+def create_model(vocab_size, embedding_dimmension, input_length,
+                 embedding_vectors, output_size):
+    # model parameters
+    num_filters = 64
+    weight_decay = 1e-4
+
+    model = Sequential()
+
+    model.add(Embedding(
+        vocab_size, embedding_dimmension, input_length=input_length,
+        weights=[embedding_vectors],
+        trainable=False
+    ))
+
+    # CNN type of network. Accuracy is above 0.95 if used with lower Dropout
+    model.add(Conv1D(num_filters, 7, activation='relu', padding='same'))
+    model.add(MaxPooling1D(2))
+    model.add(Conv1D(num_filters, 7, activation='relu', padding='same'))
+    model.add(GlobalMaxPooling1D())
+    model.add(Dropout(0.1))
+    model.add(Dense(32, activation='relu',
+                    kernel_regularizer=regularizers.l2(weight_decay)))
+    model.add(Dense(output_size, activation='sigmoid'))
+
+    return model
+
+
 def train_classifier(kvmodel, docs, lemmatized_kg):
     embeddings = kvmodel.wv.vectors
     EMB_DIM = embeddings.shape[1]    # word embedding dimmension
     VOCAB_SIZE = len(embeddings) + len(SPECIAL_TOKENS)
     fill = np.zeros((len(SPECIAL_TOKENS), EMB_DIM))
-    emb_vectors = np.vstack((fill, embeddings))
 
     MAX_LEN = 300      # Max length of text sequences
     X, y = prepare_corpus(docs, lemmatized_kg)
@@ -96,31 +122,21 @@ def train_classifier(kvmodel, docs, lemmatized_kg):
     batch_size = 100    # 256
     num_epochs = 80
 
-    # model parameters
-    num_filters = 64
-    weight_decay = 1e-4
+    emb_vectors = np.vstack((fill, embeddings))
+    output_size = len(lemmatized_kg)
+    model = create_model(
+        vocab_size=VOCAB_SIZE,
+        embedding_dimmension=EMB_DIM,
+        input_length=MAX_LEN,
+        embedding_vectors=emb_vectors,
+        output_size=output_size,
+    )
 
-    model = Sequential()
-
-    model.add(Embedding(
-        VOCAB_SIZE, EMB_DIM, input_length=MAX_LEN,
-        weights=[emb_vectors],
-        trainable=False
-    ))
-
-    # CNN type of network. Accuracy is above 0.95 if used with lower Dropout
-    model.add(Conv1D(num_filters, 7, activation='relu', padding='same'))
-    model.add(MaxPooling1D(2))
-    model.add(Conv1D(num_filters, 7, activation='relu', padding='same'))
-    model.add(GlobalMaxPooling1D())
-    model.add(Dropout(0.1))
-    model.add(Dense(32, activation='relu',
-                    kernel_regularizer=regularizers.l2(weight_decay)))
-    model.add(Dense(len(lemmatized_kg), activation='sigmoid'))
     adam = optimizers.Adam(lr=0.001, beta_1=0.9,
                            beta_2=0.999, epsilon=1e-08, decay=0.0)
     model.compile(loss='categorical_crossentropy',
                   optimizer=adam, metrics=['accuracy'])
+
     history = model.fit(
         X_train,
         y_train,
@@ -235,6 +251,16 @@ def stream_corpus(path):
                 doc.append(line)
 
 
+def predict_classes(text, model, label_encoder, vocab, maxlen):
+    # transform the document to a list of sentences (list of tokens)
+    doc = text_tokenize(text)
+    X = docs_to_dtm([doc], vocab, maxlen)
+
+    k = model.predict(X)
+
+    return k
+
+
 @click.command()
 @click.argument('output')
 @click.argument('ftpath')
@@ -261,6 +287,14 @@ def main(output, ftpath, corpus, kg_url):
 
     for b, terms in f_kg.items():
         l_kg[b] = lemmatize_kg_terms(terms)
+
+    from nlpservice.nlp.classify import train_classifier
+    import tensorflow as tf
+    from tensorflow import keras
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
+    sess = tf.Session(config=config)
+    keras.backend.set_session(sess)
 
     k_model = train_classifier(ft_model, docs, l_kg)
     k_model.save(output)

@@ -78,7 +78,21 @@ class TestClassify:
         t = [7,  9,  8,  5,  4,  6,  1, 15, 19, 13,  7, 11,  9]
         assert list(X[0][:len(t)]) == t
 
-    def test_train_classifier(self, ftmodel, corpus, lemmatized_kg):
+    def test_train_classifier(self,
+                              ftmodel, corpus, lemmatized_kg, tf_session):
         from nlpservice.nlp.classify import train_classifier
+        model = train_classifier(ftmodel, corpus, lemmatized_kg)
+        assert model
 
-        train_classifier(ftmodel, corpus, lemmatized_kg)
+    def test_predict(self,
+                     k_model, ftmodel, corpus, lemmatized_kg, tf_session):
+        from nlpservice.nlp.classify import docs_to_dtm
+        X = docs_to_dtm([corpus[0]], ftmodel.wv.vocab, 300)
+
+        assert k_model.predict(X)
+
+    def test_create_model(self, tf_session):
+        import numpy as np
+        from nlpservice.nlp.classify import create_model
+        model = create_model(1000, 100, 100, np.empty((1000, 100)), 2)
+        assert model
