@@ -4,18 +4,20 @@ from collections import Counter, defaultdict, deque
 import click
 import numpy as np
 import requests
+import tensorflow as tf
 from gensim.models import FastText
 from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
+from tensorflow import keras
 from tensorflow.keras import optimizers, regularizers
 from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.layers import (Conv1D, Dense, Dropout, Embedding,
                                      GlobalMaxPooling1D, MaxPooling1D)
-from tensorflow.keras.models import Sequential
+from tensorflow.keras.models import Sequential, save_model
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.utils import to_categorical
 
-from .prepare import clean, text_tokenize
+from .prepare import text_tokenize
 from .utils import lemmatize_kg_terms
 
 logger = logging.getLogger(__name__)
@@ -97,7 +99,7 @@ def create_model(vocab_size, embedding_dimmension, input_length,
     return model
 
 
-def train_classifier(kvmodel, docs, lemmatized_kg):
+def make_classifier(kvmodel, docs, lemmatized_kg):
     embeddings = kvmodel.wv.vectors
     EMB_DIM = embeddings.shape[1]    # word embedding dimmension
     VOCAB_SIZE = len(embeddings) + len(SPECIAL_TOKENS)
@@ -141,8 +143,9 @@ def train_classifier(kvmodel, docs, lemmatized_kg):
         X_train,
         y_train,
         epochs=num_epochs,
-        callbacks=[EarlyStopping(
-            monitor='val_loss', min_delta=0.01, patience=3, verbose=1)],
+        callbacks=[
+            EarlyStopping(monitor='val_loss', min_delta=0.01, patience=3,
+                          verbose=1)],
         shuffle=True,
         verbose=2,
         validation_data=(X_test, y_test),
@@ -151,7 +154,7 @@ def train_classifier(kvmodel, docs, lemmatized_kg):
 
     loss, accuracy = model.evaluate(X_train, y_train, verbose=True)
 
-    return model
+    return model, loss, accuracy, history
 
 
 def get_doc_labels(doc, kg):
@@ -288,15 +291,13 @@ def main(output, ftpath, corpus, kg_url):
     for b, terms in f_kg.items():
         l_kg[b] = lemmatize_kg_terms(terms)
 
-    from nlpservice.nlp.classify import train_classifier
-    import tensorflow as tf
-    from tensorflow import keras
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
     sess = tf.Session(config=config)
     keras.backend.set_session(sess)
 
-    k_model = train_classifier(ft_model, docs, l_kg)
-    k_model.save(output)
+    k_model, loss, accuracy, history = make_classifier(ft_model, docs, l_kg)
+
+    save_model(k_model, output, overwrite=True, include_optimizer=True)
 
     return output

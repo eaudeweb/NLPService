@@ -59,47 +59,27 @@ def ftmodel():
     return FastText.load(fpath)
 
 
-# @pytest.fixture
-# def k_model(ftmodel, lemmatized_kg):
-#     from gensim.models import FastText
-#     from nlpservice.nlp.classify import SPECIAL_TOKENS, create_model
-#     import numpy as np
-#
-#     MAX_LEN = 300      # Max length of text sequences
-#
-#     embeddings = ftmodel.wv.vectors
-#     EMB_DIM = embeddings.shape[1]    # word embedding dimmension
-#     VOCAB_SIZE = len(embeddings) + len(SPECIAL_TOKENS)
-#
-#     fill = np.zeros((len(SPECIAL_TOKENS), EMB_DIM))
-#     emb_vectors = np.vstack((fill, embeddings))
-#
-#     fpath = resource_filename('nlpservice', 'tests/fixtures/k-model.hdf')
-#     model = create_model(
-#         vocab_size=VOCAB_SIZE,
-#         embedding_dimmension=EMB_DIM,
-#         input_length=MAX_LEN,
-#         embedding_vectors=emb_vectors,
-#         output_size=len(lemmatized_kg.keys()),
-#     )
-#     model.load_weights(fpath)
-#
-#     return model
-#
 @pytest.fixture
-def k_model():
+def k_model(tf_session):
     from tensorflow.keras.models import load_model
 
     fpath = resource_filename('nlpservice', 'tests/fixtures/k-model.hdf')
 
-    return load_model(fpath)
+    with tf_session.as_default():
+        model = load_model(fpath)  # , custom_objects={"embedding"})
+
+    return model
 
 
 @pytest.fixture
 def tf_session():
     import tensorflow as tf
     from tensorflow import keras
+
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
     sess = tf.Session(config=config)
+
     keras.backend.set_session(sess)
+
+    return sess
