@@ -59,9 +59,9 @@ class TestClassify:
         assert y[0] == 'Threats'
         assert X[0] is corpus[0]
 
-    def test_docs_to_dtm(self, corpus):
+    def test_dtm_from_docs(self, corpus):
         from gensim.corpora import Dictionary
-        from nlpservice.nlp.classify import docs_to_dtm
+        from nlpservice.nlp.classify import dtm_from_docs
 
         sents = []
 
@@ -72,7 +72,7 @@ class TestClassify:
 
         dct = Dictionary(sents)
 
-        X = docs_to_dtm(corpus, dct.token2id, 300)
+        X = dtm_from_docs(corpus, dct.token2id, 300)
         assert X.shape == (15, 300)     # 15 documents, 300 columns
 
         t = [7,  9,  8,  5,  4,  6,  1, 15, 19, 13,  7, 11,  9]
@@ -87,8 +87,8 @@ class TestClassify:
     def test_predict(self,
                      k_model, ftmodel, corpus, lemmatized_kg):
 
-        from nlpservice.nlp.classify import docs_to_dtm
-        X = docs_to_dtm([corpus[0]], ftmodel.wv.vocab, 300)
+        from nlpservice.nlp.classify import dtm_from_docs
+        X = dtm_from_docs([corpus[0]], ftmodel.wv.vocab, 300)
 
         assert k_model.predict(X).shape == (1, 9)
 

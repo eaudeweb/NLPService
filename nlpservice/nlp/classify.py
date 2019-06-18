@@ -46,7 +46,7 @@ def prepare_corpus(docs, lemmatized_kg):
 SPECIAL_TOKENS = {'<pad>': 0, '<start>': 1, '<unk>': 2, '<unused>': 3}
 
 
-def docs_to_dtm(docs, vocab, maxlen):
+def dtm_from_docs(docs, vocab, maxlen):
     """ Transform docs to term matrixes, padded to maxlen
     """
 
@@ -119,7 +119,7 @@ def make_classifier(kvmodel, docs, lemmatized_kg):
     y = sle.transform(y)
     y = to_categorical(y, num_classes=len(lemmatized_kg))
 
-    X = docs_to_dtm(X, vocab=kvmodel.wv.index2word, maxlen=MAX_LEN)
+    X = dtm_from_docs(X, vocab=kvmodel.wv.index2word, maxlen=MAX_LEN)
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3,
                                                         random_state=0)
@@ -257,11 +257,12 @@ def main(output, ftpath, corpus, kg_url):
 def _predict(text, model, label_encoder, vocab, maxlen):
     # transform the document to a list of sentences (list of tokens)
     doc = text_tokenize(text)
-    X = docs_to_dtm([doc], vocab, maxlen)
 
-    k = model.predict(X)
+    # compatibility with dtm_from_docs
+    doc = [' '.join(words) for words in doc]
+    X = dtm_from_docs([doc], vocab, maxlen)
 
-    return k
+    return model.predict(X)
 
 
 def predict_classes(text, model_name):
@@ -276,16 +277,40 @@ def predict_classes(text, model_name):
 
     maxlen = model.inputs[0].get_shape()[1].value
 
-    return _predict(text, model, label_encoder, vocab, maxlen)
+    k = _predict(text, model, label_encoder, vocab, maxlen)
+
+    pairs = zip(map(str, k.ravel()),
+                label_encoder.classes_)
+
+    return list(pairs)
 
 
-def load_classifier_model(model_path, ft_model_path, labels):
+def load_classifier_model(loader):
     """ Loads and registers a classifier model
     """
 
+    model_path, ft_model_path, labels = loader()
+
     session = nongpu_session()
+
     with session.as_default():
         model = load_model(model_path)
+
+    # import tensorflow as tf
+    # from tensorflow import keras
+    #
+    # g = tf.Graph()
+    #
+    # config = tf.ConfigProto()
+    # config.gpu_options.allow_growth = True
+    #
+    # with g.as_default():
+    #     model = load_model(model_path)
+
+    # g.finalize()
+
+    # s = tf.Session(config=config, graph=g)
+    # keras.backend.set_session(s)
 
     vocab = FastText.load(ft_model_path).wv.index2word
     label_encoder = get_labelencoder(labels)
@@ -297,9 +322,10 @@ def load_classifier_model(model_path, ft_model_path, labels):
     }
 
 
-def kg_classify_factory(config):
+def kg_classify_settings(config):
     """ A classifier that uses the top labels KnowledgeGraph as classes
     """
+
     settings = config.get_settings()
 
     kg_model_path = settings['nlp.kg_model_path']
@@ -309,4 +335,4 @@ def kg_classify_factory(config):
     kg = get_lemmatized_kg(kg_url)
     labels = list(sorted(kg.keys()))
 
-    return load_classifier_model(kg_model_path, ft_model_path, labels)
+    return kg_model_path, ft_model_path, labels

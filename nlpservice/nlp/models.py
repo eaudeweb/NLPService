@@ -1,16 +1,21 @@
+import threading
+
 import tensorflow as tf
 import tensorflow_hub as hub
 from tensorflow import keras
 
-SESSIONS = {}
+local = threading.local()
 
 
 def get_model(model, settings=None):
-    if model not in SESSIONS:
-        path, loader = MODELS[model]
-        SESSIONS[model] = loader(path)
+    if not hasattr(local, 'SESSIONS'):
+        local.SESSIONS = {}
 
-    return SESSIONS[model]
+    if model not in local.SESSIONS:
+        arg, loader = MODELS[model]
+        local.SESSIONS[model] = loader(arg)
+
+    return local.SESSIONS[model]
 
 
 def load_use(path):

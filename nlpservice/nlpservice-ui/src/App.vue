@@ -19,6 +19,9 @@
       <v-btn flat>
         <router-link to="/summarize">Summarize</router-link>
       </v-btn>
+      <v-btn flat>
+        <router-link to="/classify">Classify</router-link>
+      </v-btn>
 
     </v-toolbar>
 
