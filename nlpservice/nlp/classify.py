@@ -97,7 +97,7 @@ def create_model(vocab_size, embedding_dimmension, input_length,
     return model
 
 
-def get_labelencoder(terms):
+def make_labelencoder(terms):
     model = preprocessing.LabelEncoder()
     model.fit(terms)
 
@@ -115,7 +115,7 @@ def make_classifier(kvmodel, docs, lemmatized_kg):
 
     # one-hot encode labels
     top_labels = list(sorted(lemmatized_kg.keys()))
-    sle = get_labelencoder(top_labels)
+    sle = make_labelencoder(top_labels)
     y = sle.transform(y)
     y = to_categorical(y, num_classes=len(lemmatized_kg))
 
@@ -300,7 +300,7 @@ def load_classifier_model(loader):
         model = load_model(model_path)
 
     vocab = FastText.load(ft_model_path).wv.index2word
-    label_encoder = get_labelencoder(labels)
+    label_encoder = make_labelencoder(labels)
 
     return {
         'model': model,

@@ -23,7 +23,7 @@ def sentences2vec(sentences, model=None):
     return vectors
 
 
-def get_es_records(es_url):
+def get_es_records(es_url, batch_size=1000):
     """ Get all records from an ElasticSearch index
     """
 
@@ -33,29 +33,27 @@ def get_es_records(es_url):
 
     query = {
         "sort": ["_doc"],
-        "size": 1000
+        "size": batch_size
     }
     url = "%s/_search?scroll=10m" % (es_url)
 
     resp = requests.post(url, json=query).json()
     hits = resp["hits"]["hits"]
 
-    # query["scroll"] = "10m"
     query["scroll_id"] = resp["_scroll_id"]
 
-    c = 1000
+    c = batch_size
 
     def _batch(c):
         logger.info("Scroll position: %s", c)
         q = {
             "scroll": "1m",
             "scroll_id": query["scroll_id"],
-            # 'from': cursor
         }
         url = server + "_search/scroll"
         resp = requests.post(url, json=q).json()
         query["scroll_id"] = resp["_scroll_id"]
-        c += 1000
+        c += batch_size
 
         return c, resp["hits"]["hits"]
 
