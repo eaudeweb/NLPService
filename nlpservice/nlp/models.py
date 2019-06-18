@@ -4,6 +4,7 @@ import tensorflow as tf
 import tensorflow_hub as hub
 from tensorflow import keras
 
+# load one model per thread. This may be inneficient, should research it better
 local = threading.local()
 
 

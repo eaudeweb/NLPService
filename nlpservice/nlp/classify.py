@@ -296,22 +296,6 @@ def load_classifier_model(loader):
     with session.as_default():
         model = load_model(model_path)
 
-    # import tensorflow as tf
-    # from tensorflow import keras
-    #
-    # g = tf.Graph()
-    #
-    # config = tf.ConfigProto()
-    # config.gpu_options.allow_growth = True
-    #
-    # with g.as_default():
-    #     model = load_model(model_path)
-
-    # g.finalize()
-
-    # s = tf.Session(config=config, graph=g)
-    # keras.backend.set_session(s)
-
     vocab = FastText.load(ft_model_path).wv.index2word
     label_encoder = get_labelencoder(labels)
 
