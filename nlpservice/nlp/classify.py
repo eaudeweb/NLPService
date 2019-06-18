@@ -286,7 +286,10 @@ def predict_classes(text, model_name):
 
 
 def load_classifier_model(loader):
-    """ Loads and registers a classifier model
+    """ Generic loader for classification models.
+
+    :param loader: a callable that returns model path, word embeddings path
+                   (for vocabulary) and the labels (classification targets)
     """
 
     model_path, ft_model_path, labels = loader()
