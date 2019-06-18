@@ -96,4 +96,4 @@ class TestClassify:
         import numpy as np
         from nlpservice.nlp.classify import create_model
         model = create_model(1000, 100, 100, np.empty((1000, 100)), 2)
-        assert model.summary()
+        assert model

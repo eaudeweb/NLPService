@@ -1,7 +1,6 @@
 import numpy as np
 from nltk.tokenize import sent_tokenize
 from scipy.cluster.vq import kmeans2
-from sklearn.metrics.pairwise import cosine_similarity
 
 from .utils import sentences2vec
 
@@ -36,6 +35,8 @@ def clusterize_by_topics(text, topics):
     c, labels = kmeans2(sv, k=centers, minit='matrix')
 
     res = []
+
+    # from sklearn.metrics.pairwise import cosine_similarity
 
     for i, (l, sent) in enumerate(zip(labels, sentences)):
         topic = topic_index[l]

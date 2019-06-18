@@ -1,5 +1,6 @@
 import itertools
 import logging
+from collections import defaultdict, deque
 from urllib import parse
 
 import click
@@ -7,44 +8,9 @@ import requests
 from nltk.stem import PorterStemmer
 from nltk.tokenize import word_tokenize
 
+from .models import get_model
+
 logger = logging.getLogger(__name__)
-
-
-SESSIONS = {}
-
-
-def get_model(model, settings=None):
-    if model not in SESSIONS:
-        path, loader = MODELS[model]
-        SESSIONS[model] = loader(path)
-
-    return SESSIONS[model]
-
-
-def load_use(path):
-    import tensorflow as tf
-    import tensorflow_hub as hub
-    # tf.device('/cpu:0')     # :)
-    g = tf.Graph()
-
-    with g.as_default():
-        placeholder = tf.placeholder(dtype=tf.string, shape=[None])
-        embed = hub.Module(path)
-        op = embed(placeholder)
-        init = [tf.global_variables_initializer(), tf.tables_initializer()]
-        init_op = tf.group(init)
-
-    g.finalize()
-    session = tf.Session(graph=g)
-    session.run(init_op)
-
-    return session, op, placeholder
-
-
-MODELS = {
-    'UniversalSentenceEncoder':
-    ('https://tfhub.dev/google/universal-sentence-encoder-large/3', load_use),
-}
 
 
 def sentences2vec(sentences, model=None):
@@ -126,3 +92,51 @@ def lemmatize_kg_terms(terms):
                 out.append(p)
 
     return out
+
+
+def _flatten(children):
+
+    terms = []
+    to_crawl = deque(children)    # kg.values()
+
+    while to_crawl:
+        current = to_crawl.popleft()
+        terms += [t.strip() for t in current['name'].split(',')]
+        to_crawl.extend(current.get('children', []))
+
+    return terms
+
+
+def flatten_knowledge_graph(kg):
+    """ Flatten the KG to a map of major branches and their trigger words
+    """
+
+    res = defaultdict(list)
+
+    for mj_branch in kg:
+        name = mj_branch['name']
+        res[name] = [name] + _flatten(mj_branch.get('children', []))
+
+    return res
+
+
+def get_lemmatized_kg(url):
+    kg = requests.get(url).json()
+    flat = flatten_knowledge_graph(kg)
+    res = {}
+
+    for b, terms in flat.items():
+        res[b] = lemmatize_kg_terms(terms)
+
+    return res
+
+
+def terms_from_list(l):
+    # unused?
+    terms = []
+
+    for ts in l:
+        ts = [t.strip() for t in ts.split(',')]
+        terms.extend(ts)
+
+    return list(filter(None, terms))

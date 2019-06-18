@@ -5,21 +5,12 @@ from colander import Int, Length, MappingSchema, SchemaNode, String
 from cornice import Service
 from cornice.validators import colander_body_validator
 
+from .nlp.classify import predict_classes
 from .nlp.cluster import clusterize_by_topics
 from .nlp.duplicate import duplicate_detection
 from .nlp.prepare import clean
 from .nlp.similarity import semantic_similarity
 from .nlp.summarize import summarize_text
-
-hello = Service(name='hello', path='/', description="Simplest app")
-
-
-@hello.get()
-def get_info(request):
-    """Returns Hello in JSON."""
-
-    return {'Hello': 'World'}
-
 
 summarize = Service(
     name='summarize', path='/summarize',
@@ -28,21 +19,23 @@ summarize = Service(
 )
 
 
-class SummarizeSchema(MappingSchema):
+class SimpleTextSchema(MappingSchema):
     text = SchemaNode(
         String(encoding='utf-8', allow_empty=False),
-        validator=Length(min=100, max=10000)
+        validator=Length(min=10, max=100000)
     )
+
+
+class SummarizeSchema(SimpleTextSchema):
     target_length = SchemaNode(Int(), missing=0)
 
 
 @summarize.post(schema=SummarizeSchema, validators=(colander_body_validator))
 def summarize_text_view(request):
     text = request.validated['text']
-    summary = summarize_text(text)
 
     return {
-        'result': summary
+        'result': summarize_text(text)
     }
 
 
@@ -69,10 +62,8 @@ def similarity_text_view(request):
     base = request.validated['base']
     proba = request.validated['proba']
 
-    score = semantic_similarity(base, proba)
-
     return {
-        'result': str(score)
+        'result': str(semantic_similarity(base, proba))
     }
 
 
@@ -84,21 +75,12 @@ duplicate = Service(
 )
 
 
-class DuplicateSchema(MappingSchema):
-    text = SchemaNode(
-        String(encoding='utf-8', allow_empty=False),
-        validator=Length(min=100, max=10000)
-    )
-
-
-@duplicate.post(schema=DuplicateSchema, validators=(colander_body_validator))
+@duplicate.post(schema=SimpleTextSchema, validators=(colander_body_validator))
 def duplicate_text_view(request):
     text = request.validated['text']
 
-    duplicates = duplicate_detection(text)
-
     return {
-        'result': duplicates
+        'result': duplicate_detection(text)
     }
 
 
@@ -109,11 +91,7 @@ clusterize = Service(
 )
 
 
-class ClusterizeSchema(MappingSchema):
-    text = SchemaNode(
-        String(encoding='utf-8', allow_empty=False),
-        validator=Length(min=100, max=10000)
-    )
+class ClusterizeSchema(SimpleTextSchema):
     topics = SchemaNode(
         String(encoding='utf-8', allow_empty=False),
         validator=Length(min=10, max=10000)
@@ -131,10 +109,8 @@ def clusterize_text_view(request):
         ts = [x.strip() for x in t.split(',')]
         st.append(ts)
 
-    clusters = clusterize_by_topics(text, st)
-
     return {
-        'result': clusters
+        'result': clusterize_by_topics(text, st)
     }
 
 
@@ -145,19 +121,34 @@ prepare = Service(
 )
 
 
-class PrepareSchema(MappingSchema):
-    text = SchemaNode(
-        String(encoding='utf-8', allow_empty=False),
-        validator=Length(min=10, max=100000)
-    )
-
-
-@prepare.post(schema=PrepareSchema, validators=(colander_body_validator))
+@prepare.post(schema=SimpleTextSchema, validators=(colander_body_validator))
 def prepare_text_view(request):
     text = request.validated['text']
 
-    result = clean(text)
+    return {
+        'result': clean(text)
+    }
+
+
+classify = Service(
+    name='classify', path='/classify',
+    description='Run classification predictions on text',
+    cors_enabled=True, cors_origins="*",
+)
+
+
+class ClassifySchema(SimpleTextSchema):
+    model = SchemaNode(
+        String(encoding='utf-8', allow_empty=False),
+        # TODO: write validator
+    )
+
+
+@classify.post(schema=ClassifySchema, validators=(colander_body_validator))
+def classify_view(request):
+    text = request.validated['text']
+    model = request.validated['model']
 
     return {
-        'result': result,
+        'result': predict_classes(text, model)
     }
