@@ -119,6 +119,8 @@ def flatten_knowledge_graph(kg):
 
 
 def get_lemmatized_kg(url):
+    import pdb
+    pdb.set_trace()
     kg = requests.get(url).json()
     flat = flatten_knowledge_graph(kg)
     res = {}

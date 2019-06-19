@@ -227,7 +227,7 @@ def stream_corpus(path):
 @click.argument('ftpath')
 @click.argument('corpus')
 @click.option('--kg-url',
-              default='http://localhost:8880/api/knowledge-graph/dump_all/',
+              default='http://app:8880/api/knowledge-graph/dump_all/',
               help='KnowledgeGraph dump location')
 def main(output, ftpath, corpus, kg_url):
     """ Train a Classification model

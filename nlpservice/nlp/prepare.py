@@ -344,7 +344,7 @@ def clean(text, filters=FILTERS):
 @click.command()
 @click.argument('output')
 @click.option('--es-url',
-              default='http://localhost:9200/content',
+              default='http://elasticsearch:9200/content',
               help='ElasticSearch index URL location')
 @click.option('--count',
               default=0,
