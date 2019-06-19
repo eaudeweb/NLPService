@@ -6,7 +6,7 @@ from pkg_resources import resource_filename
 
 @pytest.fixture
 def kg():
-    from nlpservice.nlp.classify import flatten_knowledge_graph
+    from nlpservice.nlp.utils import flatten_knowledge_graph
 
     fpath = resource_filename('nlpservice', 'tests/fixtures/kg.json')
     with open(fpath) as f:
@@ -17,7 +17,7 @@ def kg():
 
 @pytest.fixture
 def lemmatized_kg():
-    from nlpservice.nlp.classify import flatten_knowledge_graph
+    from nlpservice.nlp.utils import flatten_knowledge_graph
     from nlpservice.nlp.utils import lemmatize_kg_terms
 
     fpath = resource_filename('nlpservice', 'tests/fixtures/kg.json')

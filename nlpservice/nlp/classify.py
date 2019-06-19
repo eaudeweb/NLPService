@@ -47,7 +47,7 @@ SPECIAL_TOKENS = {'<pad>': 0, '<start>': 1, '<unk>': 2, '<unused>': 3}
 
 
 def dtm_from_docs(docs, vocab, maxlen):
-    """ Transform docs to term matrixes, padded to maxlen
+    """ Transform docs to term matrices, padded to maxlen
     """
 
     # patch the vocabulary to reserve first positions
