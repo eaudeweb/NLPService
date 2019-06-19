@@ -14,6 +14,7 @@ install_requires = [
     'tensorflow-hub',
     'colander',
     'scipy',
+    'gensim',
 
     # text cleanup utilities
     'textacy',
