@@ -49,3 +49,11 @@ def nongpu_session():
     keras.backend.set_session(s)
 
     return s
+
+
+def gpu_session():
+    config = tf.ConfigProto(log_device_placement=True)
+    s = tf.Session(config=config)
+    keras.backend.set_session(s)
+
+    return s

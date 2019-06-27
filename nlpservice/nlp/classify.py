@@ -14,7 +14,7 @@ from tensorflow.keras.models import Sequential, load_model, save_model
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.utils import to_categorical
 
-from .models import get_model, nongpu_session
+from .models import get_model, gpu_session, nongpu_session
 from .prepare import text_tokenize
 from .utils import get_lemmatized_kg
 
@@ -111,6 +111,7 @@ def make_classifier(kvmodel, docs, lemmatized_kg):
     fill = np.zeros((len(SPECIAL_TOKENS), EMB_DIM))
 
     MAX_LEN = 300      # Max length of text sequences
+    logger.info("Extracting document labels")
     X, y = prepare_corpus(docs, lemmatized_kg)
 
     # one-hot encode labels
@@ -119,6 +120,7 @@ def make_classifier(kvmodel, docs, lemmatized_kg):
     y = sle.transform(y)
     y = to_categorical(y, num_classes=len(lemmatized_kg))
 
+    logger.info("Creating DTM training dataset")
     X = dtm_from_docs(X, vocab=kvmodel.wv.index2word, maxlen=MAX_LEN)
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3,
@@ -128,6 +130,7 @@ def make_classifier(kvmodel, docs, lemmatized_kg):
     batch_size = 100    # 256
     num_epochs = 80
 
+    logger.info("Creating model")
     emb_vectors = np.vstack((fill, embeddings))
     output_size = len(lemmatized_kg)
     model = create_model(
@@ -142,6 +145,8 @@ def make_classifier(kvmodel, docs, lemmatized_kg):
                            beta_2=0.999, epsilon=1e-08, decay=0.0)
     model.compile(loss='categorical_crossentropy',
                   optimizer=adam, metrics=['accuracy'])
+
+    logger.info('Start training')
 
     history = model.fit(
         X_train,
@@ -187,6 +192,8 @@ def read_corpus(path):
 
     A sentence is space separated tokens (words)
     """
+
+    logger.info('Loading corpus')
     docs = []
     doc = []
 
@@ -229,7 +236,10 @@ def stream_corpus(path):
 @click.option('--kg-url',
               default='http://localhost:8880/api/knowledge-graph/dump_all/',
               help='KnowledgeGraph dump location')
-def main(output, ftpath, corpus, kg_url):
+@click.option('--cpu/--gpu',
+              default=True,
+              help='Use CPU for training, if no GPU is available')
+def main(output, ftpath, corpus, kg_url, cpu):
     """ Train a Classification model
 
     :param output: output path for the TF model
@@ -238,17 +248,23 @@ def main(output, ftpath, corpus, kg_url):
                     Separate documents with an empty line
     :
     """
+    logger.setLevel(logging.DEBUG)
     docs = read_corpus(corpus)
 
+    logger.info("Loading fasttext model")
     ft_model = FastText.load(ftpath)
     kg = get_lemmatized_kg(kg_url)
 
-    sess = nongpu_session()
+    if cpu:
+        sess = nongpu_session()
+    else:
+        sess = gpu_session()  # non
     with sess.as_default():
         k_model, loss, accuracy, history = make_classifier(
             ft_model, docs, kg
         )
 
+        logger.info("Model trained, saving")
         save_model(k_model, output, overwrite=True, include_optimizer=True)
 
     return output
@@ -276,6 +292,8 @@ def predict_classes(text, model_name):
     vocab = suite['vocab']
 
     maxlen = model.inputs[0].get_shape()[1].value
+    import pdb
+    pdb.set_trace()
 
     k = _predict(text, model, label_encoder, vocab, maxlen)
 

@@ -17,6 +17,9 @@
         <router-link to="/similarity">Similarity</router-link>
       </v-btn>
       <v-btn flat>
+        <router-link to="/kv">KV</router-link>
+      </v-btn>
+      <v-btn flat>
         <router-link to="/summarize">Summarize</router-link>
       </v-btn>
       <v-btn flat>

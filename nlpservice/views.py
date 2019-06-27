@@ -8,6 +8,7 @@ from cornice.validators import colander_body_validator
 from .nlp.classify import predict_classes
 from .nlp.cluster import clusterize_by_topics
 from .nlp.duplicate import duplicate_detection
+from .nlp.fasttext import similar_by_word
 from .nlp.prepare import clean
 from .nlp.similarity import semantic_similarity
 from .nlp.summarize import summarize_text
@@ -22,12 +23,37 @@ summarize = Service(
 class SimpleTextSchema(MappingSchema):
     text = SchemaNode(
         String(encoding='utf-8', allow_empty=False),
-        validator=Length(min=10, max=100000)
+        validator=Length(min=2, max=100000)
     )
 
 
 class SummarizeSchema(SimpleTextSchema):
     target_length = SchemaNode(Int(), missing=0)
+
+
+class SimpleModelSchema(SimpleTextSchema):
+    model = SchemaNode(
+        String(encoding='utf-8', allow_empty=False),
+        # TODO: write validator
+    )
+
+
+class SimilaritySchema(MappingSchema):
+    base = SchemaNode(
+        String(encoding='utf-8', allow_empty=False),
+        validator=Length(min=100, max=10000)
+    )
+    proba = SchemaNode(
+        String(encoding='utf-8', allow_empty=False),
+        validator=Length(min=100, max=10000)
+    )
+
+
+class ClusterizeSchema(SimpleTextSchema):
+    topics = SchemaNode(
+        String(encoding='utf-8', allow_empty=False),
+        validator=Length(min=10, max=10000)
+    )
 
 
 @summarize.post(schema=SummarizeSchema, validators=(colander_body_validator))
@@ -44,17 +70,6 @@ similarity = Service(
     description='Simple text similarity service',
     cors_enabled=True, cors_origins="*",
 )
-
-
-class SimilaritySchema(MappingSchema):
-    base = SchemaNode(
-        String(encoding='utf-8', allow_empty=False),
-        validator=Length(min=100, max=10000)
-    )
-    proba = SchemaNode(
-        String(encoding='utf-8', allow_empty=False),
-        validator=Length(min=100, max=10000)
-    )
 
 
 @similarity.post(schema=SimilaritySchema, validators=(colander_body_validator))
@@ -89,13 +104,6 @@ clusterize = Service(
     description='Clusterize sentences according to seed topics',
     cors_enabled=True, cors_origins="*",
 )
-
-
-class ClusterizeSchema(SimpleTextSchema):
-    topics = SchemaNode(
-        String(encoding='utf-8', allow_empty=False),
-        validator=Length(min=10, max=10000)
-    )
 
 
 @clusterize.post(schema=ClusterizeSchema, validators=(colander_body_validator))
@@ -137,18 +145,29 @@ classify = Service(
 )
 
 
-class ClassifySchema(SimpleTextSchema):
-    model = SchemaNode(
-        String(encoding='utf-8', allow_empty=False),
-        # TODO: write validator
-    )
-
-
-@classify.post(schema=ClassifySchema, validators=(colander_body_validator))
+@classify.post(schema=SimpleModelSchema, validators=(colander_body_validator))
 def classify_view(request):
     text = request.validated['text']
     model = request.validated['model']
 
     return {
         'result': predict_classes(text, model)
+    }
+
+
+kv_synonyms = Service(
+    name='kv_synonyms', path='/kv_synonyms',
+    description='Yield synonyms based on KeyedVectors model',
+    cors_enabled=True, cors_origins="*",
+)
+
+
+@kv_synonyms.post(schema=SimpleModelSchema,
+                  validators=(colander_body_validator))
+def kv_synonyms_view(request):
+    text = request.validated['text']
+    model = request.validated['model']
+
+    return {
+        'result': similar_by_word(text, model)
     }

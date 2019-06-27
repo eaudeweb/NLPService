@@ -2,6 +2,7 @@ import Start from '../components/Start'
 import Summarize from '../components/summarize/Main'
 import Duplicate from '../components/duplicate/Main'
 import Similarity from '../components/Similarity'
+import KeyedVectors from '../components/KeyedVectors'
 import Classify from '../components/Classify'
 import Clusterize from '../components/cluster/Main'
 
@@ -21,6 +22,10 @@ const routes = [
   {
     path: '/similarity',
     component: Similarity,
+  },
+  {
+    path: '/kv',
+    component: KeyedVectors,
   },
   {
     path: '/duplicate',
