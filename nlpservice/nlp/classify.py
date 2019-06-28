@@ -2,6 +2,8 @@ import logging
 from collections import Counter
 
 import click
+from tqdm import tqdm
+
 import numpy as np
 from gensim.models import FastText
 from sklearn import preprocessing
@@ -13,6 +15,7 @@ from tensorflow.keras.layers import (Conv1D, Dense, Dropout, Embedding,
 from tensorflow.keras.models import Sequential, load_model, save_model
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.utils import to_categorical
+from textacy.preprocess import normalize_whitespace
 
 from .models import get_model, gpu_session, nongpu_session
 from .prepare import text_tokenize
@@ -29,7 +32,7 @@ def prepare_corpus(docs, lemmatized_kg):
 
     X,  y = [], []
 
-    for doc in docs:
+    for doc in tqdm(docs):
         labels = get_doc_labels(doc, lemmatized_kg)
 
         if not labels:
@@ -114,6 +117,9 @@ def make_classifier(kvmodel, docs, lemmatized_kg):
     logger.info("Extracting document labels")
     X, y = prepare_corpus(docs, lemmatized_kg)
 
+    # TODO: y labeled output has changed
+    # Needs to be fixed
+
     # one-hot encode labels
     top_labels = list(sorted(lemmatized_kg.keys()))
     sle = make_labelencoder(top_labels)
@@ -181,10 +187,12 @@ def get_doc_labels(doc, kg):
 
     top = found.most_common()
 
-    if top:
-        return top[0][0]
-
-    return []
+    return top or []
+    #
+    # if top:
+    #     return top[0][0]
+    #
+    # return []
 
 
 def read_corpus(path):
@@ -270,6 +278,54 @@ def main(output, ftpath, corpus, kg_url, cpu):
     return output
 
 
+@click.command()
+@click.argument('corpus')
+@click.argument('output')
+@click.option('--kg-url',
+              default='http://app:8880/api/knowledge-graph/dump_all/',
+              help='KnowledgeGraph dump location')
+@click.option('--test-size', default=0.3, help='Split ratio', type=float)
+def label(corpus, output, kg_url, test_size):
+    """ Generate fasttext compatible text files
+    """
+
+    docs = read_corpus(corpus)
+    kg = get_lemmatized_kg(kg_url)
+    X, y = prepare_corpus(docs, kg)
+    yy = []
+
+    for tl in y:
+        ls = [x[0].lower().replace(' ', '_') for x in tl]
+        yy.append(ls)
+    y = yy
+
+    X = [normalize_whitespace(('</s>'.join(sents)).replace('dignr', ''))
+         for sents in X]
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y,
+                                                        test_size=test_size,
+                                                        random_state=0)
+    train_path = output + '-train'
+    test_path = output + '-test'
+
+    with open(train_path, 'w') as f:
+        for labels, text in zip(y_train, X_train):
+            ls = ' '.join(['__label__{}'.format(l) for l in labels])
+            line = "{} {}".format(ls, text)
+            f.write(line)
+            f.write('\n')
+
+    with open(test_path, 'w') as f:
+        for labels, text in zip(y_test, X_test):
+            ls = ' '.join(['__label__{}'.format(l) for l in labels])
+            line = "{} {}".format(ls, text)
+            f.write(line)
+            f.write('\n')
+
+    logger.info("Wrote train file: %s", train_path)
+    logger.info("Wrote test file: %s", test_path)
+
+
 def _predict(text, model, label_encoder, vocab, maxlen):
     # transform the document to a list of sentences (list of tokens)
     doc = text_tokenize(text)
@@ -292,8 +348,6 @@ def predict_classes(text, model_name):
     vocab = suite['vocab']
 
     maxlen = model.inputs[0].get_shape()[1].value
-    import pdb
-    pdb.set_trace()
 
     k = _predict(text, model, label_encoder, vocab, maxlen)
 
@@ -317,12 +371,14 @@ def load_classifier_model(loader):
     with session.as_default():
         model = load_model(model_path)
 
-    vocab = FastText.load(ft_model_path).wv.index2word
+    kv_model = FastText.load(ft_model_path)
+    vocab = kv_model.wv.index2word
     label_encoder = make_labelencoder(labels)
 
     return {
-        'model': model,
+        'kv_model': kv_model,
         'labels': label_encoder,
+        'model': model,
         'vocab': vocab,
     }
 
@@ -341,3 +397,7 @@ def kg_classify_settings(config):
     labels = list(sorted(kg.keys()))
 
     return kg_model_path, ft_model_path, labels
+
+
+def make_predict(config):
+    pass

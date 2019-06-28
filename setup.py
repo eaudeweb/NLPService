@@ -58,7 +58,8 @@ setup(name='nlpservice',
       main=nlpservice:main
       [console_scripts]
       prepare=nlpservice.nlp.prepare:main
-      fasttext=nlpservice.nlp.fasttext:main
+      kv=nlpservice.nlp.fasttext:main
       train=nlpservice.nlp.classify:main
+      label=nlpservice.nlp.classify:label
       """,
       paster_plugins=['pyramid'])
