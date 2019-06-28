@@ -100,7 +100,9 @@ def _flatten(children):
 
     while to_crawl:
         current = to_crawl.popleft()
-        terms += [t.strip() for t in current['name'].split(',')]
+        # terms += [t.strip() for t in current['name'].split(',')]
+        # don't use the abbreviations
+        terms += [current['name'].split(',')[0]]
         to_crawl.extend(current.get('children', []))
 
     return terms

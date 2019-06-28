@@ -310,14 +310,14 @@ def label(corpus, output, kg_url, test_size):
 
     with open(train_path, 'w') as f:
         for labels, text in zip(y_train, X_train):
-            ls = ' '.join(['__label__{}'.format(l) for l in labels])
+            ls = ' '.join(['__label__{}'.format(l) for l in labels[:1]])
             line = "{} {}".format(ls, text)
             f.write(line)
             f.write('\n')
 
     with open(test_path, 'w') as f:
         for labels, text in zip(y_test, X_test):
-            ls = ' '.join(['__label__{}'.format(l) for l in labels])
+            ls = ' '.join(['__label__{}'.format(l) for l in labels[:1]])
             line = "{} {}".format(ls, text)
             f.write(line)
             f.write('\n')
@@ -341,63 +341,99 @@ def predict_classes(text, model_name):
     """ Make class predictions for text
     """
 
-    suite = get_model(model_name)
+    import pdb
+    pdb.set_trace()
+    predict = get_model(model_name)
+    labels, scores = predict(text)
 
-    model = suite['model']
-    label_encoder = suite['labels']
-    vocab = suite['vocab']
-
-    maxlen = model.inputs[0].get_shape()[1].value
-
-    k = _predict(text, model, label_encoder, vocab, maxlen)
-
-    pairs = zip(map(str, k.ravel()),
-                label_encoder.classes_)
+    pairs = zip(
+        [l.replace('__label__', '').replace('_', ' ').title()
+         for l in labels],
+        map(str, scores.ravel())
+    )
 
     return list(pairs)
 
+    # model = suite['model']
+    # label_encoder = suite['labels']
+    # vocab = suite['vocab']
+    #
+    # maxlen = model.inputs[0].get_shape()[1].value
+    #
+    # k = _predict(text, model, label_encoder, vocab, maxlen)
+    #
+    # pairs = zip(map(str, k.ravel()),
+    #             label_encoder.classes_)
+    #
+    # return list(pairs)
+
 
 def load_classifier_model(loader):
-    """ Generic loader for classification models.
+    predict = loader()
 
-    :param loader: a callable that returns model path, word embeddings path
-                   (for vocabulary) and the labels (classification targets)
-    """
-
-    model_path, ft_model_path, labels = loader()
-
-    session = nongpu_session()
-
-    with session.as_default():
-        model = load_model(model_path)
-
-    kv_model = FastText.load(ft_model_path)
-    vocab = kv_model.wv.index2word
-    label_encoder = make_labelencoder(labels)
-
-    return {
-        'kv_model': kv_model,
-        'labels': label_encoder,
-        'model': model,
-        'vocab': vocab,
-    }
+    return predict
 
 
-def kg_classify_settings(config):
-    """ A classifier that uses the top labels KnowledgeGraph as classes
-    """
+def kg_classify_fasttext(config):
+    import fasttext
 
     settings = config.get_settings()
+    model_path = settings['nlp.kg_ft_classify_model_path']
 
-    kg_model_path = settings['nlp.kg_model_path']
-    ft_model_path = settings['nlp.kg_ft_path']
-    kg_url = settings['nlp.kg_url']
+    logger.warning("Loading Fasttext model %s", model_path)
+    model = fasttext.load_model(model_path)
 
-    kg = get_lemmatized_kg(kg_url)
-    labels = list(sorted(kg.keys()))
+    def predict(text):
+        doc = text_tokenize(text)
+        doc = '</s>'.join(
+            [" ".join([t for t in sent if t != 'dignr']) for sent in doc]
+        )
 
-    return kg_model_path, ft_model_path, labels
+        print(doc)
+
+        return model.predict(doc, k=3, threshold=0.0)
+
+    return predict
 
 
-def make_predict(config):
-    pass
+# def load_classifier_model(loader):
+#     """ Generic loader for classification models.
+#
+#     :param loader: a callable that returns model path, word embeddings path
+#                    (for vocabulary) and the labels (classification targets)
+#     """
+#
+#     model_path, ft_model_path, labels = loader()
+#
+#     session = nongpu_session()
+#
+#     with session.as_default():
+#         model = load_model(model_path)
+#
+#     kv_model = FastText.load(ft_model_path)
+#     vocab = kv_model.wv.index2word
+#     label_encoder = make_labelencoder(labels)
+#
+#     return {
+#         'kv_model': kv_model,
+#         'labels': label_encoder,
+#         'model': model,
+#         'vocab': vocab,
+#     }
+#
+#
+# def kg_classify_settings(config):
+#     """ A classifier that uses the top labels KnowledgeGraph as classes
+#     """
+#
+#     settings = config.get_settings()
+#
+#     kg_model_path = settings['nlp.kg_model_path']
+#     ft_model_path = settings['nlp.kg_ft_path']
+#     kg_url = settings['nlp.kg_url']
+#
+#     kg = get_lemmatized_kg(kg_url)
+#     labels = list(sorted(kg.keys()))
+#
+#     return kg_model_path, ft_model_path, labels
+#

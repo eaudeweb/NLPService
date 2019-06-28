@@ -21,12 +21,12 @@ def load_models(config, prefix, model_loader):
         name = k.rsplit('.', 1)[1]
 
         for dottedname in v.split():
-            func = DottedNameResolver().resolve(dottedname)
+            factory = DottedNameResolver().resolve(dottedname)
 
-            def loader():
-                return func(config)
+            def factory_wrapper():
+                return factory(config)
 
-            MODELS[name] = (loader, model_loader)
+            MODELS[name] = (factory_wrapper, model_loader)
 
 
 def main(global_config, **settings):
