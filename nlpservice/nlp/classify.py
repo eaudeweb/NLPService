@@ -125,6 +125,8 @@ def make_classifier(kvmodel, docs, lemmatized_kg):
     # one-hot encode labels
     top_labels = list(sorted(lemmatized_kg.keys()))
     sle = make_labelencoder(top_labels)
+
+    y = [ls[0][0] for ls in y]
     y = sle.transform(y)
     y = to_categorical(y, num_classes=len(lemmatized_kg))
 

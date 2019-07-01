@@ -48,15 +48,15 @@ class TestClassify:
 
         doc = corpus[0]
         labels = get_doc_labels(doc, lemmatized_kg)
-        assert labels == 'Threats'
+        assert labels == [('Threats', 8), ('Policy', 3)]
 
     def test_prepare_corpus(self, corpus, lemmatized_kg):
         from nlpservice.nlp.classify import prepare_corpus
 
         X, y = prepare_corpus(corpus, lemmatized_kg)
 
-        assert len(X) == len(y) == 15
-        assert y[0] == 'Threats'
+        assert len(X) == len(y) == 13
+        assert y[0] == [('Threats', 8), ('Policy', 3)]
         assert X[0] is corpus[0]
 
     def test_dtm_from_docs(self, corpus):

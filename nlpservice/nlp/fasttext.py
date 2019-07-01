@@ -22,34 +22,39 @@ def trim(word, count, min_count):
         return RULE_DEFAULT
 
 
-count = 0
-
-
-def counter(it):
-    global count
-
-    for line in it:
-        count += 1
-        yield line.split(' ')
-
+# count = 0
+#
+#
+# def counter(it):
+#     global count
+#
+#     for line in it:
+#         line = line.strip()
+#
+#         if not line:
+#             continue
+#
+#         count += 1
+#         yield line.split(' ')
+#
 
 @click.command()
 @click.argument('textfile')
 @click.argument('output')
 def main(textfile, output):
+    """ A script to generate FastText-based word embedings
+    """
 
     logger.setLevel(logging.WARNING)
     model = FastText(size=100, window=3, sg=True, min_count=5,
                      seed=0, word_ngrams=True, trim_rule=trim)
 
-    global count
-    count = 0
+    with open(textfile) as f:
+        sentences = [l.strip().split(' ') for l in list(f)]
 
-    with Path(textfile).open() as f:
-        lines = (l.strip() for l in f)
-        model.build_vocab(sentences=counter(tqdm(lines)))
-        f.seek(0)
-        model.train(sentences=f, epochs=10, total_examples=count, workers=7)
+    model.build_vocab(sentences=tqdm(sentences))
+    model.train(sentences=tqdm(sentences),
+                epochs=10, total_examples=len(sentences), workers=7)
 
     model.save(output)
 
@@ -83,4 +88,4 @@ def load_kv_model(loader):
 def corpus_kv_settings(config):
     settings = config.get_settings()
 
-    return settings['nlp.kg_ft_path']
+    return settings['nlp.kg_kv_path']
