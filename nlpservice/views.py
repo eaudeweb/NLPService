@@ -171,3 +171,22 @@ def kv_synonyms_view(request):
     return {
         'result': similar_by_word(text, model)
     }
+
+
+list_classifiers = Service(
+    name="list-classifiers", path='/list-classifiers',
+    description='Get a list of classifier models',
+    cors_enabled=True, cors_origins="*",
+)
+
+
+@list_classifiers.get()
+def list_classifiers_view(request):
+    from nlpservice import get_keys_by_prefix
+    pairs = get_keys_by_prefix(request.registry.settings, 'nlp.classifier.')
+    names = [p[0] for p in pairs]
+    names = [n.rsplit('.', 1)[1] for n in names]
+
+    return {
+        'result': list(set(names))
+    }

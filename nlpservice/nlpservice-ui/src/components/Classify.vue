@@ -9,6 +9,7 @@
         <v-sheet color="green lighten-3" elevation="1" min-height="10em">
           <h4>Enter text</h4>
           <v-textarea v-model="text"></v-textarea>
+          <v-select :items="models" label="Model" @change="setModel"></v-select>
         </v-sheet>
       </v-flex>
 
@@ -37,21 +38,34 @@
       return {
         'text': '',
         'scores': [],
+        'model': '',
+        'models': [],
       }
     },
     methods: {
+      setModel(value) {
+        this.model = value
+      },
       submit() {
         axios
           .post('http://localhost:6543/classify',
             {
               'text': this.text,
-              'model': 'kg',
+              'model': this.model,
             })
           .then((resp) => {
             this.scores = resp.data.result
             console.log(resp)
           })
       }
+    },
+    mounted() {
+        axios
+          .get('http://localhost:6543/list-classifiers')
+          .then((resp) => {
+            this.models = resp.data.result
+            console.log(resp)
+          })
     }
   }
 </script>

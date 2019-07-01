@@ -1,5 +1,5 @@
 import logging
-from collections import Counter
+from collections import Counter, defaultdict
 
 import click
 from tqdm import tqdm
@@ -42,6 +42,8 @@ def prepare_corpus(docs, lemmatized_kg):
 
         X.append(doc)
         y.append(labels)
+
+    logger.warning('%s unlabeled documents', unlabeled)
 
     return X, y
 
@@ -188,11 +190,6 @@ def get_doc_labels(doc, kg):
     top = found.most_common()
 
     return top or []
-    #
-    # if top:
-    #     return top[0][0]
-    #
-    # return []
 
 
 def read_corpus(path):
@@ -281,25 +278,52 @@ def main(output, ftpath, corpus, kg_url, cpu):
 @click.command()
 @click.argument('corpus')
 @click.argument('output')
+@click.option('--numdocs',
+              default=0, help='Number of docs to process', type=int)
 @click.option('--kg-url',
               default='http://app:8880/api/knowledge-graph/dump_all/',
               help='KnowledgeGraph dump location')
 @click.option('--test-size', default=0.3, help='Split ratio', type=float)
-def label(corpus, output, kg_url, test_size):
+def label(corpus, output, kg_url, test_size, numdocs=None):
     """ Generate fasttext compatible text files
+
+    Single label version
     """
 
     docs = read_corpus(corpus)
+
+    if numdocs:
+        docs = docs[:numdocs]
+
     kg = get_lemmatized_kg(kg_url)
+
     X, y = prepare_corpus(docs, kg)
-    yy = []
 
-    for tl in y:
-        ls = [x[0].lower().replace(' ', '_') for x in tl]
-        yy.append(ls)
-    y = yy
+    by_labels = defaultdict(list)
 
-    X = [normalize_whitespace(('</s>'.join(sents)).replace('dignr', ''))
+    for doc, tls in zip(X, y):
+        label, count = tls[0]
+        by_labels[label].append((count, doc))
+
+    counts = [len(v) for v in by_labels.values()]
+    max_docs = min(counts)
+
+    X, y = [], []
+
+    for label, counteddocs in by_labels.items():
+        docs = sorted(counteddocs, key=lambda d: d[0], reverse=True)
+        docs = [d[1] for d in docs]
+        docs = docs[:max_docs]
+        X.extend(docs)
+        y.extend([label] * max_docs)
+
+    # yy = []
+    # for tl in y:
+    #     ls = [x[0].lower().replace(' ', '_') for x in tl]
+    #     yy.append(ls)
+    # y = yy
+
+    X = [normalize_whitespace((' </s> '.join(sents)).replace('dignr', ''))
          for sents in X]
 
     X_train, X_test, y_train, y_test = train_test_split(X, y,
@@ -309,15 +333,17 @@ def label(corpus, output, kg_url, test_size):
     test_path = output + '-test'
 
     with open(train_path, 'w') as f:
-        for labels, text in zip(y_train, X_train):
-            ls = ' '.join(['__label__{}'.format(l) for l in labels[:1]])
+        for label, text in zip(y_train, X_train):
+            ls = '__label__' + label.replace(' ', '_').lower()
+            # ls = ' '.join(['__label__{}'.format(l) for l in labels[:1]])
             line = "{} {}".format(ls, text)
             f.write(line)
             f.write('\n')
 
     with open(test_path, 'w') as f:
-        for labels, text in zip(y_test, X_test):
-            ls = ' '.join(['__label__{}'.format(l) for l in labels[:1]])
+        for label, text in zip(y_test, X_test):
+            ls = '__label__' + label.replace(' ', '_').lower()
+            # ls = ' '.join(['__label__{}'.format(l) for l in labels[:1]])
             line = "{} {}".format(ls, text)
             f.write(line)
             f.write('\n')
@@ -341,31 +367,7 @@ def predict_classes(text, model_name):
     """ Make class predictions for text
     """
 
-    import pdb
-    pdb.set_trace()
-    predict = get_model(model_name)
-    labels, scores = predict(text)
-
-    pairs = zip(
-        [l.replace('__label__', '').replace('_', ' ').title()
-         for l in labels],
-        map(str, scores.ravel())
-    )
-
-    return list(pairs)
-
-    # model = suite['model']
-    # label_encoder = suite['labels']
-    # vocab = suite['vocab']
-    #
-    # maxlen = model.inputs[0].get_shape()[1].value
-    #
-    # k = _predict(text, model, label_encoder, vocab, maxlen)
-    #
-    # pairs = zip(map(str, k.ravel()),
-    #             label_encoder.classes_)
-    #
-    # return list(pairs)
+    return get_model(model_name)(text)
 
 
 def load_classifier_model(loader):
@@ -374,7 +376,7 @@ def load_classifier_model(loader):
     return predict
 
 
-def kg_classify_fasttext(config):
+def kg_classifier_fasttext(config):
     import fasttext
 
     settings = config.get_settings()
@@ -385,55 +387,55 @@ def kg_classify_fasttext(config):
 
     def predict(text):
         doc = text_tokenize(text)
-        doc = '</s>'.join(
+        doc = ' </s> '.join(
             [" ".join([t for t in sent if t != 'dignr']) for sent in doc]
         )
 
         print(doc)
 
-        return model.predict(doc, k=3, threshold=0.0)
+        labels, scores = model.predict(doc, k=3, threshold=0.0)(text)
+
+        pairs = zip(
+            [l.replace('__label__', '').replace('_', ' ').title()
+             for l in labels],
+            map(str, scores.ravel())
+        )
+
+        return list(pairs)
 
     return predict
 
 
-# def load_classifier_model(loader):
-#     """ Generic loader for classification models.
-#
-#     :param loader: a callable that returns model path, word embeddings path
-#                    (for vocabulary) and the labels (classification targets)
-#     """
-#
-#     model_path, ft_model_path, labels = loader()
-#
-#     session = nongpu_session()
-#
-#     with session.as_default():
-#         model = load_model(model_path)
-#
-#     kv_model = FastText.load(ft_model_path)
-#     vocab = kv_model.wv.index2word
-#     label_encoder = make_labelencoder(labels)
-#
-#     return {
-#         'kv_model': kv_model,
-#         'labels': label_encoder,
-#         'model': model,
-#         'vocab': vocab,
-#     }
-#
-#
-# def kg_classify_settings(config):
-#     """ A classifier that uses the top labels KnowledgeGraph as classes
-#     """
-#
-#     settings = config.get_settings()
-#
-#     kg_model_path = settings['nlp.kg_model_path']
-#     ft_model_path = settings['nlp.kg_ft_path']
-#     kg_url = settings['nlp.kg_url']
-#
-#     kg = get_lemmatized_kg(kg_url)
-#     labels = list(sorted(kg.keys()))
-#
-#     return kg_model_path, ft_model_path, labels
-#
+def kg_classifier_keras(config):
+    """ A classifier that uses the top labels KnowledgeGraph as classes
+    """
+
+    settings = config.get_settings()
+
+    model_path = settings['nlp.kg_model_path']
+    ft_model_path = settings['nlp.kg_ft_path']
+    kg_url = settings['nlp.kg_url']
+
+    kg = get_lemmatized_kg(kg_url)
+    labels = list(sorted(kg.keys()))
+
+    session = nongpu_session()
+
+    with session.as_default():
+        model = load_model(model_path)
+
+    kv_model = FastText.load(ft_model_path)
+    vocab = kv_model.wv.index2word
+    label_encoder = make_labelencoder(labels)
+
+    def predict(text):
+        maxlen = model.inputs[0].get_shape()[1].value
+
+        k = _predict(text, model, label_encoder, vocab, maxlen)
+
+        pairs = zip(map(str, k.ravel()),
+                    label_encoder.classes_)
+
+        return list(pairs)
+
+    return predict
