@@ -1,6 +1,7 @@
 """ Main pyramid entry point, console utils
 """
 
+import logging
 import os
 
 from nlpservice.nlp.classify import load_classifier_model
@@ -11,8 +12,18 @@ from pyramid.util import DottedNameResolver
 
 from .utils import get_keys_by_prefix
 
+logger = logging.getLogger(__name__)
 
-def load_models(config, prefix, model_loader):
+
+def prepare_model_loaders(config, prefix, model_loader):
+    """
+    """
+
+    def config_wrapper(factory):
+        def inner():
+            return factory(config)
+
+        return inner
 
     settings = config.get_settings()
 
@@ -22,11 +33,11 @@ def load_models(config, prefix, model_loader):
 
         for dottedname in v.split():
             factory = DottedNameResolver().resolve(dottedname)
+            logger.warning('Resolved %s: %s', dottedname, factory)
 
-            def factory_wrapper():
-                return factory(config)
+            MODELS[name] = (config_wrapper(factory), model_loader)
 
-            MODELS[name] = (factory_wrapper, model_loader)
+    print(MODELS)
 
 
 def main(global_config, **settings):
@@ -38,7 +49,7 @@ def main(global_config, **settings):
     cache_path = settings['nlp.tf_model_cache_path'].strip()
     os.environ['TFHUB_CACHE_DIR'] = cache_path
 
-    load_models(config, 'nlp.classifier.', load_classifier_model)
-    load_models(config, 'nlp.keyedvectors.', load_kv_model)
+    prepare_model_loaders(config, 'nlp.classifier.', load_classifier_model)
+    prepare_model_loaders(config, 'nlp.keyedvectors.', load_kv_model)
 
     return config.make_wsgi_app()

@@ -379,13 +379,15 @@ def predict_classes(text, model_name):
     """ Make class predictions for text
     """
 
-    return get_model(model_name)(text)
+    suite = get_model(model_name)
+
+    return suite['predict'](text)
 
 
 def load_classifier_model(loader):
-    predict = loader()
+    suite = loader()
 
-    return predict
+    return suite
 
 
 def kg_classifier_fasttext(config):
@@ -405,7 +407,7 @@ def kg_classifier_fasttext(config):
 
         print(doc)
 
-        labels, scores = model.predict(doc, k=3, threshold=0.0)(text)
+        labels, scores = model.predict(doc, k=3, threshold=0.0)   # (text)
 
         pairs = zip(
             [l.replace('__label__', '').replace('_', ' ').title()
@@ -415,7 +417,11 @@ def kg_classifier_fasttext(config):
 
         return list(pairs)
 
-    return predict
+    return {
+        'predict': predict,
+        'train': lambda: None,
+        'metadata': {},
+    }
 
 
 def kg_classifier_keras(config):
@@ -450,4 +456,8 @@ def kg_classifier_keras(config):
 
         return list(pairs)
 
-    return predict
+    return {
+        'predict': predict,
+        'metadata': {},
+        'train': lambda: None,
+    }

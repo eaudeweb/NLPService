@@ -5,18 +5,20 @@ import tensorflow_hub as hub
 from tensorflow import keras
 
 # load one model per thread. This may be inneficient, should research it better
+# the problem is that of tensorflow sessions
 local = threading.local()
 
 
-def get_model(model, settings=None):
+def get_model(name, settings=None):
     if not hasattr(local, 'SESSIONS'):
         local.SESSIONS = {}
 
-    if model not in local.SESSIONS:
-        arg, loader = MODELS[model]
-        local.SESSIONS[model] = loader(arg)
+    if name not in local.SESSIONS:
+        specific_loader, generic_loader = MODELS[name]
+        suite = generic_loader(specific_loader)
+        local.SESSIONS[name] = suite
 
-    return local.SESSIONS[model]
+    return local.SESSIONS[name]
 
 
 def load_use(path):
@@ -43,6 +45,8 @@ MODELS = {
 
 
 def nongpu_session():
+    # TODO: should check if can be used as auto session, automatically choose
+    # CPU or GPU
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
     s = tf.Session(config=config)
@@ -53,7 +57,7 @@ def nongpu_session():
 
 def gpu_session():
     config = tf.ConfigProto(log_device_placement=True)
-    s = tf.Session(config=config)
-    keras.backend.set_session(s)
+    session = tf.Session(config=config)
+    keras.backend.set_session(session)
 
-    return s
+    return session
