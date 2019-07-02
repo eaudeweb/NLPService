@@ -9,3 +9,8 @@ class TestUtils:
         assert ('softwar', 'vulner') in terms
         assert ('zero-day',) in terms
         assert ('man-in-the-brows',) in terms
+
+    def test_lemmatize_sent(self, kg):
+        from nlpservice.nlp.utils import lemmatize_sentence
+        import pdb
+        pdb.set_trace()

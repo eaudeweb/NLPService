@@ -1,12 +1,15 @@
 import itertools
 import logging
+import string
 from collections import defaultdict, deque
 from urllib import parse
 
 import click
 import requests
 
-from nltk.stem import PorterStemmer
+import nltk
+from nltk.corpus import stopwords
+from nltk.stem import PorterStemmer, WordNetLemmatizer
 from nltk.tokenize import word_tokenize
 
 from .models import get_model
@@ -63,34 +66,62 @@ def get_es_records(es_url, batch_size=1000):
         c, hits = _batch(c)
 
 
+WL = WordNetLemmatizer()
+
+stops = set(stopwords.words('english'))
+
+
+def lemmatize_sentence(sentence):
+    tag_to_wordnet = {
+        "J": nltk.corpus.wordnet.ADJ,
+        "N": nltk.corpus.wordnet.NOUN,
+        "V": nltk.corpus.wordnet.VERB,
+        "R": nltk.corpus.wordnet.ADV,
+    }
+
+    results = set()
+
+    for word, tag in nltk.pos_tag(nltk.word_tokenize(sentence)):
+        pos = tag_to_wordnet.get(tag[0].upper(), nltk.corpus.wordnet.NOUN)
+        stem = WL.lemmatize(word, pos).lower()
+
+        if (stem not in string.punctuation) and (stem not in stops):
+            results.add(stem)
+
+    return results
+
+
 def lemmatize_kg_terms(terms):
     """ Lemmatize the terms, to be able to match documents to KG terms
     """
-    ps = PorterStemmer()
-    out = []
 
-    for t in terms:
-        parts = []
+    return [lemmatize_sentence(s) for s in terms]
 
-        if ',' in t:
-            ts = filter(None, [x.strip() for x in t.split(',')])
-
-            for t in ts:
-                if t.isupper():
-                    continue     # we'll skip acronyms, for now
-                doc = word_tokenize(t)
-                parts.append([ps.stem(t) for t in doc])
-        else:
-            doc = word_tokenize(t)
-            parts.append([ps.stem(t) for t in doc])
-
-        for part in parts:
-            p = tuple([x.lower() for x in part if len(x) > 1])
-
-            if p:
-                out.append(p)
-
-    return out
+    # ps = PorterStemmer()
+    # out = []
+    #
+    # for t in terms:
+    #     parts = []
+    #
+    #     if ',' in t:
+    #         ts = filter(None, [x.strip() for x in t.split(',')])
+    #
+    #         for t in ts:
+    #             if t.isupper():
+    #                 continue     # we'll skip acronyms, for now
+    #             doc = word_tokenize(t)
+    #             parts.append([ps.stem(t) for t in doc])
+    #     else:
+    #         doc = word_tokenize(t)
+    #         parts.append([ps.stem(t) for t in doc])
+    #
+    #     for part in parts:
+    #         p = tuple([x.lower() for x in part if len(x) > 1])
+    #
+    #         if p:
+    #             out.append(p)
+    #
+    # return out
 
 
 def _flatten(children):

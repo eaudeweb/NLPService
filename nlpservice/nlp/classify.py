@@ -6,6 +6,7 @@ from tqdm import tqdm
 
 import numpy as np
 from gensim.models import FastText
+from joblib import Memory
 from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
 from tensorflow.keras import optimizers, regularizers
@@ -23,7 +24,11 @@ from .utils import get_lemmatized_kg
 
 logger = logging.getLogger(__name__)
 
+location = './cachedir'
+memory = Memory(location, verbose=0)
 
+
+@memory.cache
 def prepare_corpus(docs, lemmatized_kg):
     """ Get a label for each document. Returns ML compatibile X/y data structs
     """
@@ -56,7 +61,7 @@ def dtm_from_docs(docs, vocab, maxlen):
     """
 
     # patch the vocabulary to reserve first positions
-    token2id = {v: (i + 4) for i, v in enumerate(vocab)}
+    token2id = {v: (i + len(SPECIAL_TOKENS)) for i, v in enumerate(vocab)}
 
     def doc2tokens(doc):
         out = []
@@ -119,9 +124,6 @@ def make_classifier(kvmodel, docs, lemmatized_kg):
     logger.info("Extracting document labels")
     X, y = prepare_corpus(docs, lemmatized_kg)
 
-    # TODO: y labeled output has changed
-    # Needs to be fixed
-
     # one-hot encode labels
     top_labels = list(sorted(lemmatized_kg.keys()))
     sle = make_labelencoder(top_labels)
@@ -154,7 +156,8 @@ def make_classifier(kvmodel, docs, lemmatized_kg):
     adam = optimizers.Adam(lr=0.001, beta_1=0.9,
                            beta_2=0.999, epsilon=1e-08, decay=0.0)
     model.compile(loss='categorical_crossentropy',
-                  optimizer=adam, metrics=['accuracy'])
+                  optimizer=adam,
+                  metrics=['accuracy'])
 
     logger.info('Start training')
 
@@ -183,6 +186,8 @@ def get_doc_labels(doc, kg):
     # or parse with Spacy and do word match
 
     for label, stem_pairs in kg.items():
+
+        # TODO: use wordnet derived word alternatives?
 
         for sent in doc:
             for stems in stem_pairs:
@@ -261,6 +266,9 @@ def main(output, ftpath, corpus, kg_url, cpu):
     logger.info("Loading fasttext model")
     ft_model = FastText.load(ftpath)
     kg = get_lemmatized_kg(kg_url)
+
+    # import pdb
+    # pdb.set_trace()
 
     if cpu:
         sess = nongpu_session()
@@ -359,10 +367,12 @@ def _predict(text, model, label_encoder, vocab, maxlen):
     doc = text_tokenize(text)
 
     # compatibility with dtm_from_docs
-    doc = [' '.join(words) for words in doc]
+    doc = [' '.join(sent) for sent in doc]
     X = dtm_from_docs([doc], vocab, maxlen)
 
-    return model.predict(X)
+    p = model.predict([X])
+
+    return p
 
 
 def predict_classes(text, model_name):
@@ -415,7 +425,7 @@ def kg_classifier_keras(config):
     settings = config.get_settings()
 
     model_path = settings['nlp.kg_model_path']
-    ft_model_path = settings['nlp.kg_ft_path']
+    ft_model_path = settings['nlp.kg_kv_path']
     kg_url = settings['nlp.kg_url']
 
     kg = get_lemmatized_kg(kg_url)
