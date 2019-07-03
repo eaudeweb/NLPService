@@ -9,6 +9,8 @@ with open(os.path.join(here, 'README.md')) as f:
 
 
 install_requires = [
+    'gunicorn',
+
     'cornice',
     'waitress',
     'tensorflow-hub',
