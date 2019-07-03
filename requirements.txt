@@ -58,10 +58,10 @@ smart-open==1.8.4
 spacy==2.1.4
 srsly==0.0.7
 syntok==1.2.1
-tensorboard==1.13.1
-tensorflow==1.13.1
-tensorflow-estimator==1.13.0
-tensorflow-hub==0.4.0
+#tensorboard==1.13.1
+#tensorflow==1.13.1
+#tensorflow-estimator==1.13.0
+#tensorflow-hub==0.4.0
 termcolor==1.1.0
 textacy==0.7.0
 thinc==7.0.4
