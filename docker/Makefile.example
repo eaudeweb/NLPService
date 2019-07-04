@@ -1,0 +1,23 @@
+.DEFAULT: models
+
+prepare:
+	@echo "Preparing corpus.txt"
+	prepare --es-url=http://elasticsearch:9200/content corpus.txt
+
+label:
+	@echo "Labeling corpus.txt"
+	label corpus.txt labeled-corpus --kg-url=http://nginx/api/knowledge-graph/dump_all/
+
+train_kv:
+	@echo "Training word embeddings"
+	kv corpus.txt corpus-ft
+
+train_keras:
+	@echo "Training keras model"
+	train --cpu k-model.hdf corpus-ft corpus.txt --kg-url=http://nginx/api/knowledge-graph/dump_all/
+
+train_ft:
+	@echo "Training fasttext model"
+	/app/fastText/fasttext supervised -input labeled-corpus-train -output labeled-corpus -lr 0.5 -epoch 40 -wordNgrams 2 -bucket 2000000 -dim 50
+
+models:prepare label train_kv train_keras train_ft

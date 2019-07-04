@@ -1,4 +1,6 @@
 import logging
+import os
+import tempfile
 from collections import Counter, defaultdict
 
 import click
@@ -24,7 +26,7 @@ from .utils import get_lemmatized_kg
 
 logger = logging.getLogger(__name__)
 
-location = './cachedir'
+location = os.path.join(tempfile.gettempdir(), './cachedir')
 memory = Memory(location, verbose=0)
 
 
