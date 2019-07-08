@@ -4,6 +4,7 @@ import re
 from pathlib import Path
 
 import click
+
 import ftfy
 import syntok.segmenter as segmenter
 import textacy as tc
@@ -355,6 +356,8 @@ def main(output, es_url, count):
     Output is a text file, with one sentence per line
     """
 
+    import pdb
+    pdb.set_trace()
     logging.basicConfig()
     logger.setLevel(logging.INFO)
 

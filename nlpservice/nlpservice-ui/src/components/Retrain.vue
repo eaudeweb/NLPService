@@ -2,22 +2,13 @@
   <v-container grid-list-md>
     <v-layout row wrap>
       <v-flex xs12 md12>
-      <h2 class="headline font-weight-bold mb-3">Classify</h2>
+      <h2 class="headline font-weight-bold mb-3">Retrain</h2>
       </v-flex>
 
       <v-flex xs12 md6>
         <v-sheet color="green lighten-3" elevation="1" min-height="10em">
-          <h4>Enter text</h4>
-          <v-textarea v-model="text"></v-textarea>
-          <v-select :items="models" label="Model" @change="setModel"></v-select>
-        </v-sheet>
-      </v-flex>
-
-      <v-flex xs12 md6>
-        <v-sheet color="purple lighten-3" elevation="1" min-height="10em">
-          <div v-for="s in scores" :key="s">
-            {{ s[0] }} - {{ s[1] }}
-          </div>
+          <h4>Set models for retraining</h4>
+          <v-select multiple :items="models" label="Model" @change="setModel"></v-select>
         </v-sheet>
       </v-flex>
 
@@ -36,21 +27,19 @@
     },
     data () {
       return {
-        'text': '',
-        'scores': [],
-        'model': '',
         'models': [],
+        'retrain': []
       }
     },
     methods: {
       setModel(value) {
-        this.model = value
+        this.retrain = value
       },
       submit() {
         axios
-          .post('http://localhost:6543/classify/' + this.model,
+          .post('http://localhost:6543/classify/',
             {
-              'text': this.text,
+              'models': this.retrain,
             })
           .then((resp) => {
             this.scores = resp.data.result

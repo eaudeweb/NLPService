@@ -1,8 +1,10 @@
 """ Cornice services.
 """
 
-from colander import Int, Length, MappingSchema, SchemaNode, String
+from colander import (Int, Length, MappingSchema, SchemaNode, SequenceSchema,
+                      String)
 from cornice import Service
+from cornice.resource import resource, view
 from cornice.validators import colander_body_validator
 
 from .nlp.classify import predict_classes
@@ -25,6 +27,17 @@ class SimpleTextSchema(MappingSchema):
         String(encoding='utf-8', allow_empty=False),
         validator=Length(min=2, max=100000)
     )
+
+
+class Models(SequenceSchema):
+    model = SchemaNode(
+        String(encoding='utf-8', allow_empty=False),
+        validator=Length(min=2, max=100)
+    )
+
+
+class ModelListSchema(MappingSchema):
+    models = Models()
 
 
 class SummarizeSchema(SimpleTextSchema):
@@ -138,23 +151,6 @@ def prepare_text_view(request):
     }
 
 
-classify = Service(
-    name='classify', path='/classify',
-    description='Run classification predictions on text',
-    cors_enabled=True, cors_origins="*",
-)
-
-
-@classify.post(schema=SimpleModelSchema, validators=(colander_body_validator))
-def classify_view(request):
-    text = request.validated['text']
-    model = request.validated['model']
-
-    return {
-        'result': predict_classes(text, model)
-    }
-
-
 kv_synonyms = Service(
     name='kv_synonyms', path='/kv_synonyms',
     description='Yield synonyms based on KeyedVectors model',
@@ -173,20 +169,52 @@ def kv_synonyms_view(request):
     }
 
 
-list_classifiers = Service(
-    name="list-classifiers", path='/list-classifiers',
-    description='Get a list of classifier models',
-    cors_enabled=True, cors_origins="*",
-)
+@resource(collection_path="/classify/", path="/classify/{id}",
+          description='Run classification predictions on text',
+          cors_enabled=True, cors_origins="*",
+          )
+class Classifier(object):
+    def __init__(self, request, context=None):
+        self.context = context
+        self.request = request
 
+    def _get_model_names(self):
+        from nlpservice import get_keys_by_prefix
+        pairs = get_keys_by_prefix(self.request.registry.settings,
+                                   'nlp.classifier.')
+        names = [p[0] for p in pairs]
+        names = [n.rsplit('.', 1)[1] for n in names]
 
-@list_classifiers.get()
-def list_classifiers_view(request):
-    from nlpservice import get_keys_by_prefix
-    pairs = get_keys_by_prefix(request.registry.settings, 'nlp.classifier.')
-    names = [p[0] for p in pairs]
-    names = [n.rsplit('.', 1)[1] for n in names]
+        return list(set(names))
 
-    return {
-        'result': list(set(names))
-    }
+    def collection_get(self):
+        return {
+            'result': self._get_model_names()
+        }
+
+    @view(schema=SimpleTextSchema, validators=(colander_body_validator))
+    def post(self):
+        request = self.request
+        text = request.validated['text']
+        model = request.matchdict['id']
+
+        return {
+            'result': predict_classes(text, model)
+        }
+
+    @view(schema=ModelListSchema, validators=(colander_body_validator))
+    def collection_post(self):
+        """ Retrain configured models
+        """
+        from .nlp.models import get_model
+
+        names = self._get_model_names()
+        train = [t for t in names if t in self.request.validated['models']]
+
+        for name in train:
+            model = get_model(name)
+            model['train']()
+
+        return {
+            'result': 'ok'
+        }
