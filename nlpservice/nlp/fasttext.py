@@ -60,8 +60,6 @@ def main(textfile, output):
     """ A script to generate FastText-based word embedings
     """
 
-    import pdb
-    pdb.set_trace()
     logger.setLevel(logging.WARNING)
     model = FastText(size=100, window=3, sg=True, min_count=5,
                      seed=0, word_ngrams=True, trim_rule=trim)

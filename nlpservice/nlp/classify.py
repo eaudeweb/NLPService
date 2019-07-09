@@ -419,6 +419,8 @@ def kg_classifier_fasttext(config):
         return list(pairs)
 
     def train():
+        raise NotImplementedError
+
         return
 
     return {
@@ -464,7 +466,7 @@ def kg_classifier_keras(config):
         return list(pairs)
 
     def train():
-        # pipeline is: get text, save text, label text, train on text, save
+        # pipeline is: get text from elastic, prepare kv model, train on text
         logger.warning('Preparing corpus text')
         prepare_text.callback(corpus_path, kg_elastic, None)
 
