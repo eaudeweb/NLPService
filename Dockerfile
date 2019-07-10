@@ -30,18 +30,17 @@ RUN pip3 install -e /app
 
 RUN python -m nltk.downloader -d /data/nltk_data/ stopwords
 RUN python -m nltk.downloader -d /data/nltk_data/ punkt
+RUN python -m nltk.downloader -d /data/nltk_data/ wordnet
 
 EXPOSE 6543
 WORKDIR /app
 
 # HEALTHCHECK --interval=1m --timeout=5s --start-period=1m \
 #   CMD nc -z -w5 127.0.0.1 6543 || exit 1
-
 # ENV PATH /data/.local/bin:/bin:/usr/bin:/usr/local/bin
-
 # USER nlp
-
 #ENTRYPOINT ["/app/docker/docker-entrypoint.sh"]
 # RUN /app/docker/docker-setup.sh
 #CMD ["start"]
+
 CMD ["bash"]
