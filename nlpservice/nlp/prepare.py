@@ -4,6 +4,7 @@ import re
 from pathlib import Path
 
 import click
+
 import ftfy
 import syntok.segmenter as segmenter
 import textacy as tc

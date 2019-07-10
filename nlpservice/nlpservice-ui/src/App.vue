@@ -25,6 +25,9 @@
       <v-btn flat>
         <router-link to="/classify">Classify</router-link>
       </v-btn>
+      <v-btn flat>
+        <router-link to="/classify/retrain">Retrain</router-link>
+      </v-btn>
 
     </v-toolbar>
 

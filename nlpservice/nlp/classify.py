@@ -20,7 +20,9 @@ from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.utils import to_categorical
 from textacy.preprocess import normalize_whitespace
 
+from .fasttext import main as train_kv
 from .models import get_model, gpu_session, nongpu_session
+from .prepare import main as prepare_text
 from .prepare import text_tokenize
 from .utils import get_lemmatized_kg
 
@@ -202,9 +204,9 @@ def get_doc_labels(doc, kg):
 
 
 def read_corpus(path):
-    """ Returns a list of documents. A doc is a list of sentences.
+    """ Takes a text file and returns a list of documents.
 
-    A sentence is space separated tokens (words)
+    A doc is a list of sentences. A sentence is space separated tokens (words)
     """
 
     logger.info('Loading corpus')
@@ -268,9 +270,6 @@ def main(output, ftpath, corpus, kg_url, cpu):
     logger.info("Loading fasttext model")
     ft_model = FastText.load(ftpath)
     kg = get_lemmatized_kg(kg_url)
-
-    # import pdb
-    # pdb.set_trace()
 
     if cpu:
         sess = nongpu_session()
@@ -419,9 +418,14 @@ def kg_classifier_fasttext(config):
 
         return list(pairs)
 
+    def train():
+        raise NotImplementedError
+
+        return
+
     return {
         'predict': predict,
-        'train': lambda: None,
+        'train': train,
         'metadata': {},
     }
 
@@ -435,6 +439,7 @@ def kg_classifier_keras(config):
     model_path = settings['nlp.kg_model_path']
     ft_model_path = settings['nlp.kg_kv_path']
     kg_url = settings['nlp.kg_url']
+    kg_elastic = settings['nlp.kg_elastic']
 
     kg = get_lemmatized_kg(kg_url)
     labels = list(sorted(kg.keys()))
@@ -448,6 +453,8 @@ def kg_classifier_keras(config):
     vocab = kv_model.wv.index2word
     label_encoder = make_labelencoder(labels)
 
+    corpus_path = settings['nlp.kg_corpus']
+
     def predict(text):
         maxlen = model.inputs[0].get_shape()[1].value
 
@@ -458,8 +465,34 @@ def kg_classifier_keras(config):
 
         return list(pairs)
 
+    def train():
+        # pipeline is: get text from elastic, prepare kv model, train on text
+        logger.warning('Preparing corpus text')
+        prepare_text.callback(corpus_path, kg_elastic, None)
+
+        logger.warning('Preparing kv model')
+        train_kv.callback(corpus_path, ft_model_path)
+
+        logger.warning('Training Keras classifier')
+        out = main.callback(model_path, ft_model_path, corpus_path, kg_url,
+                            False)
+
+        return out
+
     return {
         'predict': predict,
         'metadata': {},
-        'train': lambda: None,
+        'train': train,
     }
+#
+#
+# @click.command()
+# @click.argument('model', nargs=-1, required=True)
+# def retrain(model):
+#     # TODO: we can't properly get models without an .ini file
+#
+#     for name in model:
+#         suite = get_model(name)
+#         train = suite['train']
+#         logger.warning("Retraining %s", name)
+#         train()

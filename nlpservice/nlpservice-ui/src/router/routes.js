@@ -1,10 +1,11 @@
-import Start from '../components/Start'
-import Summarize from '../components/summarize/Main'
-import Duplicate from '../components/duplicate/Main'
-import Similarity from '../components/Similarity'
-import KeyedVectors from '../components/KeyedVectors'
 import Classify from '../components/Classify'
 import Clusterize from '../components/cluster/Main'
+import Duplicate from '../components/duplicate/Main'
+import KeyedVectors from '../components/KeyedVectors'
+import Retrain from '../components/Retrain'
+import Similarity from '../components/Similarity'
+import Summarize from '../components/summarize/Main'
+import Start from '../components/Start'
 
 const routes = [
   {
@@ -34,6 +35,10 @@ const routes = [
   {
     path: '/classify',
     component: Classify,
+  },
+  {
+    path: '/classify/retrain',
+    component: Retrain,
   },
 ]
 

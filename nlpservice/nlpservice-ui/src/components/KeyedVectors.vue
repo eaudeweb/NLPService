@@ -14,7 +14,7 @@
 
       <v-flex xs12 md6>
         <v-sheet color="purple lighten-3" elevation="1" min-height="10em">
-          <div v-for="s in scores" key="s">
+          <div v-for="s in scores" :key="s">
             {{ s[0] }} - {{ s[1] }}
           </div>
         </v-sheet>
@@ -49,7 +49,6 @@
             })
           .then((resp) => {
             this.scores = resp.data.result
-            console.log(resp)
           })
       }
     }
