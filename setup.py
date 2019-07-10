@@ -64,4 +64,5 @@ setup(name='nlpservice',
       train=nlpservice.nlp.classify:main
       label=nlpservice.nlp.classify:label
       """,
+      # retrain=nlpservice.nlp.classify:retrain
       paster_plugins=['pyramid'])

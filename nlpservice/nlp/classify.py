@@ -484,3 +484,15 @@ def kg_classifier_keras(config):
         'metadata': {},
         'train': train,
     }
+#
+#
+# @click.command()
+# @click.argument('model', nargs=-1, required=True)
+# def retrain(model):
+#     # TODO: we can't properly get models without an .ini file
+#
+#     for name in model:
+#         suite = get_model(name)
+#         train = suite['train']
+#         logger.warning("Retraining %s", name)
+#         train()
