@@ -441,21 +441,29 @@ def kg_classifier_keras(config):
     kg_url = settings['nlp.kg_url']
     kg_elastic = settings['nlp.kg_elastic']
 
-    kg = get_lemmatized_kg(kg_url)
-    labels = list(sorted(kg.keys()))
-
-    session = nongpu_session()
-
-    with session.as_default():
-        model = load_model(model_path)
-
-    kv_model = FastText.load(ft_model_path)
-    vocab = kv_model.wv.index2word
-    label_encoder = make_labelencoder(labels)
-
     corpus_path = settings['nlp.kg_corpus']
 
+    loaded = []
+
+    def load():
+        kg = get_lemmatized_kg(kg_url)
+        labels = list(sorted(kg.keys()))
+        session = nongpu_session()
+
+        with session.as_default():
+            model = load_model(model_path)
+
+        kv_model = FastText.load(ft_model_path)
+        vocab = kv_model.wv.index2word
+        label_encoder = make_labelencoder(labels)
+
+        loaded.extend(model, vocab, label_encoder)
+
     def predict(text):
+        if not loaded:
+            load()
+
+        model, vocab, label_encoder = loaded
         maxlen = model.inputs[0].get_shape()[1].value
 
         k = _predict(text, model, label_encoder, vocab, maxlen)

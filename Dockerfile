@@ -31,6 +31,7 @@ RUN pip3 install -e /app
 RUN python -m nltk.downloader -d /data/nltk_data/ stopwords
 RUN python -m nltk.downloader -d /data/nltk_data/ punkt
 RUN python -m nltk.downloader -d /data/nltk_data/ wordnet
+RUN python -m nltk.downloader -d /data/nltk_data/ averaged_perceptron_tagger
 
 EXPOSE 6543
 WORKDIR /app

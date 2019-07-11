@@ -21,7 +21,10 @@ def prepare_model_loaders(config, prefix, model_loader):
 
     def config_wrapper(factory):
         def inner():
-            return factory(config)
+            try:
+                return factory(config)
+            except:
+                logger.exception("Could not run model factory %r", factory)
 
         return inner
 
