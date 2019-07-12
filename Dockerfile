@@ -42,6 +42,6 @@ WORKDIR /app
 # USER nlp
 #ENTRYPOINT ["/app/docker/docker-entrypoint.sh"]
 # RUN /app/docker/docker-setup.sh
-#CMD ["start"]
+CMD ["start"]
 
-CMD ["bash"]
+# CMD ["bash"]
