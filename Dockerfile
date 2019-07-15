@@ -40,7 +40,7 @@ WORKDIR /app
 #   CMD nc -z -w5 127.0.0.1 6543 || exit 1
 # ENV PATH /data/.local/bin:/bin:/usr/bin:/usr/local/bin
 # USER nlp
-#ENTRYPOINT ["/app/docker/docker-entrypoint.sh"]
+ENTRYPOINT ["/app/docker/docker-entrypoint.sh"]
 # RUN /app/docker/docker-setup.sh
 CMD ["start"]
 
