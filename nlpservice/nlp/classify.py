@@ -457,7 +457,7 @@ def kg_classifier_keras(config):
         vocab = kv_model.wv.index2word
         label_encoder = make_labelencoder(labels)
 
-        loaded.extend(model, vocab, label_encoder)
+        loaded.extend([model, vocab, label_encoder])
 
     def predict(text):
         if not loaded:
