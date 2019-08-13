@@ -9,8 +9,9 @@ CMD="gosu nlp pserve /app/production.ini"
 if [ ! -e "/data/nlp/.models-built" ]; then
   cp /app/docker/Makefile.example /data/nlp/Makefile
   cd /data/nlp/
+  chown -R nlp /data/nlp
   gosu nlp make
-  gosu touch /data/nlp/.models-built
+  gosu nlp touch /data/nlp/.models-built
 fi
 
 if [[ $START == *"$1"* ]]; then

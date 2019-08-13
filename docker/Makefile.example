@@ -1,4 +1,4 @@
-.DEFAULT: models
+.DEFAULT_GOAL: models
 
 prepare:
 	@echo "Preparing corpus.txt"
