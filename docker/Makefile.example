@@ -2,11 +2,11 @@
 
 prepare:
 	@echo "Preparing corpus.txt"
-	prepare --es-url=http://elasticsearch:9200/content corpus.txt
+	exec "prepare --es-url=http://$ELASTIC_HOST/content corpus.txt"
 
 label:
 	@echo "Labeling corpus.txt"
-	label corpus.txt labeled-corpus --kg-url=http://nginx/api/knowledge-graph/dump_all/
+	exec "label corpus.txt labeled-corpus --kg-url=http://$API_HOST/api/knowledge-graph/dump_all/"
 
 train_kv:
 	@echo "Training word embeddings"
@@ -14,7 +14,7 @@ train_kv:
 
 train_keras:
 	@echo "Training keras model"
-	train --cpu k-model.hdf corpus-ft corpus.txt --kg-url=http://nginx/api/knowledge-graph/dump_all/
+	train --cpu k-model.hdf corpus-ft corpus.txt --kg-url=http://$API_HOST/api/knowledge-graph/dump_all/
 
 train_ft:
 	@echo "Training fasttext model"

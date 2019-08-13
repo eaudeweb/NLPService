@@ -1,0 +1,13 @@
+version: '2.2'
+
+services:
+  nlpservice:
+    image: tiberiuichim/nlpservice:0.3
+    volumes:
+      - ./nlpservice-data:/data/nlp
+    ports:
+      - 6543:6543
+    entrypoint: sh -c "tail -f /dev/null"
+    environment:
+      ELASTIC_HOST elasticsearch
+      API_HOST nginx
