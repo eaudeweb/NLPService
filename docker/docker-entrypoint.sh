@@ -4,7 +4,7 @@ set -x
 START="start"
 
 #CMD="gunicorn --paster /app/production.ini -b 0.0.0.0:6543"
-CMD="gosu nlp pserve /app/production.ini"
+CMD="pserve /app/production.ini"
 
 if [ ! -e "/data/nlp/.models-built" ]; then
   cp /app/docker/Makefile.example /data/nlp/Makefile
