@@ -6,6 +6,7 @@ from collections import Counter, defaultdict
 import click
 from tqdm import tqdm
 
+import joblib
 import numpy as np
 from gensim.models import FastText
 from joblib import Memory
@@ -180,7 +181,7 @@ def make_classifier(kvmodel, docs, lemmatized_kg):
 
     loss, accuracy = model.evaluate(X_train, y_train, verbose=True)
 
-    return model, loss, accuracy, history
+    return model, loss, accuracy, history, sle
 
 
 def get_doc_labels(doc, kg):
@@ -245,25 +246,7 @@ def stream_corpus(path):
                 doc.append(line)
 
 
-@click.command()
-@click.argument('output')
-@click.argument('ftpath')
-@click.argument('corpus')
-@click.option('--kg-url',
-              default='http://app:8880/api/knowledge-graph/dump_all/',
-              help='KnowledgeGraph dump location')
-@click.option('--cpu/--gpu',
-              default=True,
-              help='Use CPU for training, if no GPU is available')
-def main(output, ftpath, corpus, kg_url, cpu):
-    """ Train a Classification model
-
-    :param output: output path for the TF model
-    :param ftpath: path for Fasttext word embedding model
-    :param corpus: path to a text file of documents. One sentence per line.
-                    Separate documents with an empty line
-    :
-    """
+def train(output, ftpath, corpus, kg_url, cpu):
     logger.setLevel(logging.DEBUG)
     docs = read_corpus(corpus)
 
@@ -276,14 +259,160 @@ def main(output, ftpath, corpus, kg_url, cpu):
     else:
         sess = gpu_session()  # non
     with sess.as_default():
-        k_model, loss, accuracy, history = make_classifier(
+        k_model, loss, accuracy, history, label_encoder = make_classifier(
             ft_model, docs, kg
         )
 
         logger.info("Model trained, saving")
         save_model(k_model, output, overwrite=True, include_optimizer=True)
+        le_save_path = get_labelencoder_path(output)
+        joblib.dump(label_encoder, le_save_path)
 
     return output
+
+
+def _predict(text, model, label_encoder, vocab, maxlen):
+    # transform the document to a list of sentences (list of tokens)
+    doc = text_tokenize(text)
+
+    # compatibility with dtm_from_docs
+    doc = [' '.join(sent) for sent in doc]
+    X = dtm_from_docs([doc], vocab, maxlen)
+
+    p = model.predict([X])
+
+    return p
+
+
+def predict_classes(text, model_name):
+    """ Make class predictions for text
+    """
+
+    suite = get_model(model_name)
+
+    return suite['predict'](text)
+
+
+def load_classifier_model(loader):
+    suite = loader()
+
+    return suite
+
+
+def kg_classifier_fasttext(config):
+    import fasttext
+
+    settings = config.get_settings()
+    model_path = settings['nlp.kg_ft_classify_model_path']
+
+    logger.warning("Loading Fasttext model %s", model_path)
+    model = fasttext.load_model(model_path)
+
+    def predict(text):
+        doc = text_tokenize(text)
+        doc = ' </s> '.join(
+            [" ".join([t for t in sent if t != 'dignr']) for sent in doc]
+        )
+
+        print(doc)
+
+        labels, scores = model.predict(doc, k=3, threshold=0.0)   # (text)
+
+        pairs = zip(
+            [l.replace('__label__', '').replace('_', ' ').title()
+             for l in labels],
+            map(str, scores.ravel())
+        )
+
+        return list(pairs)
+
+    def train():
+        raise NotImplementedError
+
+        return
+
+    return {
+        'predict': predict,
+        'train': train,
+        'metadata': {},
+    }
+
+
+def get_labelencoder_path(path):
+    return path.rsplit('.', 1)[0] + '.labels.pk'
+
+
+def kg_classifier_keras(config):
+    """ A model factory for classifier w/ top labels KnowledgeGraph as classes
+    """
+
+    settings = config.get_settings()
+
+    model_path = settings['nlp.kg_model_path']
+    ft_model_path = settings['nlp.kg_kv_path']
+    kg_url = settings['nlp.kg_url']
+    kg_elastic = settings['nlp.kg_elastic']
+
+    corpus_path = settings['nlp.kg_corpus']
+
+    loaded = []
+
+    def load():
+        # stage 1, loading the model
+        session = nongpu_session()
+
+        with session.as_default():
+            model = load_model(model_path)
+
+        kv_model = FastText.load(ft_model_path)
+        vocab = kv_model.wv.index2word
+
+        # TODO: refactor label encoder
+        # kg = get_lemmatized_kg(kg_url, use_cache=True)
+        # labels = list(sorted(kg.keys()))
+        # label_encoder = make_labelencoder(labels)
+        le_save_path = get_labelencoder_path(model_path)
+        label_encoder = joblib.load(le_save_path)
+
+        loaded.extend([model, vocab, label_encoder])
+
+    def predict(text):
+        # stage 2, make predictions
+
+        if not loaded:
+            load()
+
+        model, vocab, label_encoder = loaded
+        maxlen = model.inputs[0].get_shape()[1].value
+
+        k = _predict(text, model, label_encoder, vocab, maxlen)
+
+        pairs = zip(map(str, k.ravel()),
+                    label_encoder.classes_)
+
+        return list(pairs)
+
+    def do_train():
+        # pipeline is: get text from elastic, prepare kv model, train on text
+
+        logger.warning('Preparing corpus text')
+        prepare_text.callback(corpus_path, kg_elastic, 2000)
+
+        logger.warning('Preparing kv model')
+        train_kv.callback(corpus_path, ft_model_path)
+
+        logger.warning('Training Keras classifier')
+        out = train(
+            model_path, ft_model_path, corpus_path, kg_url, False
+        )
+
+        return out
+
+    return {
+        'predict': predict,
+        'metadata': {},
+        'train': do_train,
+    }
 
 
 @click.command()
@@ -363,144 +492,25 @@ def label(corpus, output, kg_url, test_size, numdocs=None):
     logger.info("Wrote test file: %s", test_path)
 
 
-def _predict(text, model, label_encoder, vocab, maxlen):
-    # transform the document to a list of sentences (list of tokens)
-    doc = text_tokenize(text)
+@click.command()
+@click.argument('output')
+@click.argument('ftpath')
+@click.argument('corpus')
+@click.option('--kg-url',
+              default='http://app:8880/api/knowledge-graph/dump_all/',
+              help='KnowledgeGraph dump location')
+@click.option('--cpu/--gpu',
+              default=True,
+              help='Use CPU for training, if no GPU is available')
+def main(output, ftpath, corpus, kg_url, cpu):
+    """ Train a Classification model
 
-    # compatibility with dtm_from_docs
-    doc = [' '.join(sent) for sent in doc]
-    X = dtm_from_docs([doc], vocab, maxlen)
-
-    p = model.predict([X])
-
-    return p
-
-
-def predict_classes(text, model_name):
-    """ Make class predictions for text
+    :param output: output path for the TF model
+    :param ftpath: path for Fasttext word embedding model
+    :param corpus: path to a text file of documents. One sentence per line.
+                    Separate documents with an empty line
+    :
     """
+    res = train(output)
 
-    suite = get_model(model_name)
-
-    return suite['predict'](text)
-
-
-def load_classifier_model(loader):
-    suite = loader()
-
-    return suite
-
-
-def kg_classifier_fasttext(config):
-    import fasttext
-
-    settings = config.get_settings()
-    model_path = settings['nlp.kg_ft_classify_model_path']
-
-    logger.warning("Loading Fasttext model %s", model_path)
-    model = fasttext.load_model(model_path)
-
-    def predict(text):
-        doc = text_tokenize(text)
-        doc = ' </s> '.join(
-            [" ".join([t for t in sent if t != 'dignr']) for sent in doc]
-        )
-
-        print(doc)
-
-        labels, scores = model.predict(doc, k=3, threshold=0.0)   # (text)
-
-        pairs = zip(
-            [l.replace('__label__', '').replace('_', ' ').title()
-             for l in labels],
-            map(str, scores.ravel())
-        )
-
-        return list(pairs)
-
-    def train():
-        raise NotImplementedError
-
-        return
-
-    return {
-        'predict': predict,
-        'train': train,
-        'metadata': {},
-    }
-
-
-def kg_classifier_keras(config):
-    """ A classifier that uses the top labels KnowledgeGraph as classes
-    """
-
-    settings = config.get_settings()
-
-    model_path = settings['nlp.kg_model_path']
-    ft_model_path = settings['nlp.kg_kv_path']
-    kg_url = settings['nlp.kg_url']
-    kg_elastic = settings['nlp.kg_elastic']
-
-    corpus_path = settings['nlp.kg_corpus']
-
-    loaded = []
-
-    def load():
-        kg = get_lemmatized_kg(kg_url)
-        labels = list(sorted(kg.keys()))
-        session = nongpu_session()
-
-        with session.as_default():
-            model = load_model(model_path)
-
-        kv_model = FastText.load(ft_model_path)
-        vocab = kv_model.wv.index2word
-        label_encoder = make_labelencoder(labels)
-
-        loaded.extend([model, vocab, label_encoder])
-
-    def predict(text):
-        if not loaded:
-            load()
-
-        model, vocab, label_encoder = loaded
-        maxlen = model.inputs[0].get_shape()[1].value
-
-        k = _predict(text, model, label_encoder, vocab, maxlen)
-
-        pairs = zip(map(str, k.ravel()),
-                    label_encoder.classes_)
-
-        return list(pairs)
-
-    def train():
-        # pipeline is: get text from elastic, prepare kv model, train on text
-        logger.warning('Preparing corpus text')
-        prepare_text.callback(corpus_path, kg_elastic, None)
-
-        logger.warning('Preparing kv model')
-        train_kv.callback(corpus_path, ft_model_path)
-
-        logger.warning('Training Keras classifier')
-        out = main.callback(model_path, ft_model_path, corpus_path, kg_url,
-                            False)
-
-        return out
-
-    return {
-        'predict': predict,
-        'metadata': {},
-        'train': train,
-    }
-#
-#
-# @click.command()
-# @click.argument('model', nargs=-1, required=True)
-# def retrain(model):
-#     # TODO: we can't properly get models without an .ini file
-#
-#     for name in model:
-#         suite = get_model(name)
-#         train = suite['train']
-#         logger.warning("Retraining %s", name)
-#         train()
+    return res

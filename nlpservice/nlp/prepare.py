@@ -1,6 +1,7 @@
 import itertools
 import logging
 import re
+from io import StringIO
 from pathlib import Path
 
 import click
@@ -367,16 +368,25 @@ def main(output, es_url, count):
 
     out = Path(output)
 
-    i = 0
-    with out.open('w') as outf:
-        for rec in docs:
-            i += 1
-            texts = [rec[f].strip() for f in fields]
-            doc = ".\n".join(texts)
+    buff = StringIO()
 
-            lines = [" ".join(sent) for sent in text_tokenize(doc)]
-            outf.write("\n".join(lines))
-            outf.write('\n\n')
+    i = 0
+
+    for rec in docs:
+        i += 1
+        texts = [rec[f].strip() for f in fields]
+        doc = ".\n".join(texts)
+
+        lines = [" ".join(sent) for sent in text_tokenize(doc)]
+
+        if i % 1000 == 0:
+            logger.info("Read {} documents".format(i))
+
+        buff.write("\n".join(lines) + '\n\n')
+
+    buff.seek(0)
+    with out.open('w') as outf:
+        outf.write(buff.read())
 
     logger.info("Processed %s documents", i)
 
