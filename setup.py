@@ -17,7 +17,6 @@ install_requires = [
     'colander',
     'scipy',
     'gensim',
-    'allennlp',
 
     # text cleanup utilities
     'textacy',
