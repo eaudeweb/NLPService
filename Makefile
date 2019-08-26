@@ -25,7 +25,7 @@ bootstrap: $(MINICONDA)		## Bootstrap for local development
 
 .PHONY: release¬
 release:		## Make a Docker Hub release for nlpservice
-	sh -c "cd frontend && docker build -t tiberiuichim/nlpservice:$(VERSION) -f Dockerfile . && docker push tiberiuichim/nlpservice:$(VERSION)"
+	sh -c "docker build -t tiberiuichim/nlpservice:$(VERSION) -f Dockerfile . && docker push tiberiuichim/nlpservice:$(VERSION)"
 
 .PHONY: help
 help:		## Show this help.
