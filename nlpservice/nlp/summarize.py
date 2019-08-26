@@ -2,8 +2,6 @@ import math
 
 import nltk
 import numpy as np
-from allennlp.models.archival import load_archive
-from allennlp.service.predictors import Predictor
 from nltk.tokenize import sent_tokenize
 from sklearn.cluster import KMeans
 from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
@@ -13,13 +11,23 @@ from .utils import sentences2vec
 
 nltk.download('stopwords')
 nltk.download('punkt')
-archive = load_archive(
-    "https://s3-us-west-2.amazonaws.com/allennlp/models/"
-    "elmo-constituency-parser-2018.03.14.tar.gz",
-)
+
+try:
+    from allennlp.models.archival import load_archive
+    HAS_ALLENNLP = True
+except ImportError:
+    HAS_ALLENNLP = False
 
 
 def eliminate_intros(sent):
+    # TODO: make this a model
+    from allennlp.service.predictors import Predictor
+
+    archive = load_archive(
+        "https://s3-us-west-2.amazonaws.com/allennlp/models/"
+        "elmo-constituency-parser-2018.03.14.tar.gz",
+    )
+
     result = sent['sentence']
     comma_location = sent['sentence'].find(',')
     # if there is a comma at the beginning of the phrase
@@ -72,6 +80,13 @@ def build_vectorizer(sentences, vocab=None, min_df=0.0, max_df=1.0,
     sentence_word_count = np.asarray(bag_of_words.sum(axis=1)).ravel().tolist()
 
     return feature_names, tfidf, sentence_word_count
+
+
+def optimize_sentence(sentence):
+    if HAS_ALLENNLP:
+        return eliminate_intros({"sentence": sentence}),
+    else:
+        return sentence
 
 
 def summarize_text(text, target_len=None, keep=None):
@@ -130,7 +145,7 @@ def summarize_text(text, target_len=None, keep=None):
         # this rank variable contains the actual evaluation of the phrase
         rank = (sumimpact + 0.5 * sumimpact / length) / (3 * distance + 1)
         line = {
-            'text': eliminate_intros({"sentence": sent}),
+            'text': optimize_sentence(sent),
             'is_summary': i in closest,
             'keep': i in keep,
             'rank': rank,

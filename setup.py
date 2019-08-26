@@ -35,6 +35,11 @@ testing_requires = [
 ]
 
 
+extras_requires = [
+    'allennlp',
+]
+
+
 setup(name='nlpservice',
       version=0.1,
       description='NLP Services via REST',
@@ -55,6 +60,7 @@ setup(name='nlpservice',
       install_requires=install_requires,
       extras_require={
           'testing': testing_requires,
+          'extras': extras_requires,
       },
       entry_points="""\
       [paste.app_factory]

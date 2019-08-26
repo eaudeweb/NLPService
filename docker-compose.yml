@@ -9,5 +9,13 @@ services:
       - 6543:6543
     entrypoint: sh -c "tail -f /dev/null"
     environment:
-      ELASTIC_HOST elasticsearch
-      API_HOST nginx
+      ELASTIC_HOST: elasticsearch
+      API_HOST: nginx
+
+  elasticsearch:
+    image: elasticsearch:7.0.0
+    environment:
+      discovery.type: "single-node"
+    volumes:
+      - ./data-elastic:/usr/share/elasticsearch/data
+

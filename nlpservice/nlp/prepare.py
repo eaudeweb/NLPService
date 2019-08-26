@@ -1,4 +1,5 @@
 import itertools
+import json
 import logging
 import re
 from io import StringIO
@@ -320,17 +321,21 @@ def text_tokenize(text):
 
 FILTERS = [
     # fix_acronyms,
+
     tc.preprocess.normalize_whitespace,
-    tc.preprocess.replace_urls,
+    # disabled, it hangs the process if more then 65K documents
+    # tc.preprocess.replace_urls,
     tc.preprocess.replace_emails,
     tc.preprocess.replace_phone_numbers,
     tc.preprocess.replace_currency_symbols,
+
     fix_mal_url,
     fix_sha,
     fix_cve,
     fix_kb,
     fix_versions,
     fix_numbers,
+
     ftfy.fix_text,
     fix_sentences,
 ]
@@ -343,15 +348,28 @@ def clean(text, filters=FILTERS):
     return text
 
 
+def read_es_dump(input_file):
+    with open(input_file) as f:
+        for line in f:
+            obj = json.loads(line)
+            yield {
+                'content': obj['_source']['content'],
+                'title': obj['_source']['title'],
+            }
+
+
 @click.command()
 @click.argument('output')
 @click.option('--es-url',
               default='http://elasticsearch:9200/content',
               help='ElasticSearch index URL location')
+@click.option('--input-file',
+              default=None,
+              help='Optional dump file location')
 @click.option('--count',
               default=0,
               help='How many documents to process')
-def main(output, es_url, count):
+def main(output, es_url, input_file, count):
     """ Download and clean documents from ES, writes cleaned to output location
 
     Output is a text file, with one sentence per line
@@ -361,14 +379,18 @@ def main(output, es_url, count):
     logger.setLevel(logging.INFO)
 
     fields = ['title', 'content']
-    docs = get_es_records(es_url)
+
+    if input_file:
+        docs = read_es_dump(input_file)
+    else:
+        docs = get_es_records(es_url)
 
     if count:
         docs = itertools.islice(docs, 0, count)
 
     out = Path(output)
 
-    buff = StringIO()
+    buff = []
 
     i = 0
 
@@ -377,16 +399,17 @@ def main(output, es_url, count):
         texts = [rec[f].strip() for f in fields]
         doc = ".\n".join(texts)
 
+        # lines = filter(None, [l.strip() for l in doc.split("\n")])
         lines = [" ".join(sent) for sent in text_tokenize(doc)]
 
         if i % 1000 == 0:
             logger.info("Read {} documents".format(i))
 
-        buff.write("\n".join(lines) + '\n\n')
+        buff.append("\n".join(lines))
 
-    buff.seek(0)
     with out.open('w') as outf:
-        outf.write(buff.read())
+        s = "\n\n".join(buff)
+        outf.write(s)
 
     logger.info("Processed %s documents", i)
 

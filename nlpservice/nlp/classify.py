@@ -246,11 +246,11 @@ def stream_corpus(path):
                 doc.append(line)
 
 
-def train(output, ftpath, corpus, kg_url, cpu):
+def train_keras_model(output, ftpath, corpus, kg_url, cpu):
     logger.setLevel(logging.DEBUG)
     docs = read_corpus(corpus)
 
-    logger.info("Loading fasttext model")
+    logger.info("Loading fasttext word embeddings model")
     ft_model = FastText.load(ftpath)
     kg = get_lemmatized_kg(kg_url)
 
@@ -396,13 +396,13 @@ def kg_classifier_keras(config):
         # pipeline is: get text from elastic, prepare kv model, train on text
 
         logger.warning('Preparing corpus text')
-        prepare_text.callback(corpus_path, kg_elastic, 2000)
+        prepare_text.callback(corpus_path, kg_elastic, None)
 
         logger.warning('Preparing kv model')
         train_kv.callback(corpus_path, ft_model_path)
 
         logger.warning('Training Keras classifier')
-        out = train(
+        out = train_keras_model(
             model_path, ft_model_path, corpus_path, kg_url, False
         )
 
@@ -511,6 +511,5 @@ def main(output, ftpath, corpus, kg_url, cpu):
                     Separate documents with an empty line
     :
     """
-    res = train(output)
 
-    return res
+    return train_keras_model(output, ftpath, corpus, kg_url, cpu)
