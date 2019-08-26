@@ -24,7 +24,7 @@ bootstrap: $(MINICONDA)		## Bootstrap for local development
 	python -m nltk.downloader averaged_perceptron_tagger
 
 .PHONY: release¬
-release-frontend:		## Make a Docker Hub release for nlpservice
+release:		## Make a Docker Hub release for nlpservice
 	sh -c "cd frontend && docker build -t tiberiuichim/nlpservice:$(VERSION) -f Dockerfile . && docker push tiberiuichim/nlpservice:$(VERSION)"
 
 .PHONY: help
@@ -58,3 +58,7 @@ train-keras:
 
 full-train:	prepare-dump wordvectors train-keras
 	@echo Making the Keras Classifier Model
+
+fixtures:
+	prepare --es-url=http://localhost:9200/content nlpservice/tests/fixtures/corpus.txt
+	kv nlpservice/tests/fixtures/corpus.txt nlpservice/tests/fixtures/corpus-ft
