@@ -54,7 +54,7 @@ wordvectors:
 
 train-keras:
 	@echo Training classifier model...
-	train --cpu data/k-model data/corpus-ft data/corpus.txt --kg-url=$(API_HOST)/api/knowledge-graph/dump_all/
+	train --cpu data/k-model.hdf data/corpus-ft data/corpus.txt --kg-url=$(API_HOST)/api/knowledge-graph/dump_all/
 
 full-train:	prepare-dump wordvectors train-keras
 	@echo Making the Keras Classifier Model

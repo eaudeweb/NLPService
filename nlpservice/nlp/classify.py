@@ -126,7 +126,8 @@ def make_classifier(kvmodel, docs, lemmatized_kg):
     fill = np.zeros((len(SPECIAL_TOKENS), EMB_DIM))
 
     MAX_LEN = 300      # Max length of text sequences
-    logger.info("Extracting document labels")
+
+    logger.info("Extracting document labels. Using cache, unless progressbar")
     X, y = prepare_corpus(docs, lemmatized_kg)
 
     # one-hot encode labels
@@ -258,6 +259,7 @@ def train_keras_model(output, ftpath, corpus, kg_url, cpu):
         sess = nongpu_session()
     else:
         sess = gpu_session()  # non
+
     with sess.as_default():
         k_model, loss, accuracy, history, label_encoder = make_classifier(
             ft_model, docs, kg
@@ -359,7 +361,7 @@ def kg_classifier_keras(config):
 
     def load():
         # stage 1, loading the model
-        session = nongpu_session()
+        session = gpu_session()
 
         with session.as_default():
             model = load_model(model_path)
