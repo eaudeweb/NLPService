@@ -5,6 +5,18 @@ MINICONDA = Miniconda3-latest-Linux-x86_64.sh
 $(MINICONDA):
 	wget "https://repo.anaconda.com/miniconda/$(MINICONDA)"
 
+# define standard colors
+BLACK        := $(shell tput -Txterm setaf 0)
+RED          := $(shell tput -Txterm setaf 1)
+GREEN        := $(shell tput -Txterm setaf 2)
+YELLOW       := $(shell tput -Txterm setaf 3)
+LIGHTPURPLE  := $(shell tput -Txterm setaf 4)
+PURPLE       := $(shell tput -Txterm setaf 5)
+BLUE         := $(shell tput -Txterm setaf 6)
+WHITE        := $(shell tput -Txterm setaf 7)
+
+RESET := $(shell tput -Txterm sgr0)
+
 .PHONY: bootstrap
 bootstrap: $(MINICONDA)		## Bootstrap for local development
 	@echo "Please install miniconda in $(HOME)/miniconda3"
@@ -48,17 +60,18 @@ fasttext:		## Make a FastText classifier
 	./fasttext supervised -input /data/labeled-corpus-train -output /data/labeled-corpus -lr 0.5 -epoch 40 -wordNgrams 2 -bucket 2000000 -dim 50;\
 	./fasttext test /data/labeled-corpus.bin /data/labeled-corpus-test 3"
 
-wordvectors:
+wordvectors:		## Create WordVectors model
 	@echo Training the wordvectors model...
 	kv data/corpus.txt data/corpus-ft
 
-train-keras:
+train-keras:		## Train a Keras classifier
 	@echo Training classifier model...
-	train --cpu data/k-model.hdf data/corpus-ft data/corpus.txt --kg-url=$(API_HOST)/api/knowledge-graph/dump_all/
+	rm -rf $(TMP)/cachedir/*
+	train --gpu data/k-model.hdf data/corpus-ft data/corpus.txt --kg-url=$(API_HOST)/api/knowledge-graph/dump_all/
 
 full-train:	prepare-dump wordvectors train-keras
 	@echo Making the Keras Classifier Model
 
-fixtures:
+fixtures:		## Make the fixtures needed for automated tests
 	prepare --es-url=http://localhost:9200/content nlpservice/tests/fixtures/corpus.txt
 	kv nlpservice/tests/fixtures/corpus.txt nlpservice/tests/fixtures/corpus-ft
