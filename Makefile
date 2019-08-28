@@ -35,7 +35,7 @@ bootstrap: $(MINICONDA)		## Bootstrap for local development
 	python -m nltk.downloader wordnet
 	python -m nltk.downloader averaged_perceptron_tagger
 
-.PHONY: release¬
+.PHONY: release
 release:		## Make a Docker Hub release for nlpservice
 	sh -c "docker build -t tiberiuichim/nlpservice:$(VERSION) -f Dockerfile . && docker push tiberiuichim/nlpservice:$(VERSION)"
 
@@ -43,35 +43,46 @@ release:		## Make a Docker Hub release for nlpservice
 help:		## Show this help.
 	@echo -e "$$(grep -hE '^\S+:.*##' $(MAKEFILE_LIST) | sed -e 's/:.*##\s*/:/' -e 's/^\(.\+\):\(.*\)/\\x1b[36m\1\\x1b[m:\2/' | column -c2 -t -s :)"
 
+.PHONY: prepare-es
 prepare-es:		## Prepare a corpus file reading content from ElasticSearch
 	prepare --es-url=http://localhost:9200/content data/corpus.txt
 
+.PHONY: prepare-dump
 prepare-dump:		## Prepare a corpus file reading content from an ES dump file
-	@echo Preparing a corpus file, from ES dump file...
+	@echo $(RED)Preparing a corpus file, from ES dump file... $(RESET)
 	prepare --input-file=./content.data.json data/corpus.txt
 
+.PHONY: label
 label:		## Prepare a FastText compatible labeled corpus file
-	@echo Creating a fasttext compatible labeled corpus file...
+	@echo $(RED)Creating a fasttext compatible labeled corpus file... $(RESET)
 	label data/corpus.txt data/labeled-corpus --kg-url=http://$(API_HOST)/api/knowledge-graph/dump_all/
 
+.PHONY: fasttext
 fasttext:		## Make a FastText classifier
-	@echo Training the Fasttext classifier model...
+	@echo $(RED)Training the Fasttext classifier model... $(RESET)
 	docker run --rm -v /home/tibi/work/enisa-opencsam/NLPService/data:/data -it hephaex/fasttext sh -c "
 	./fasttext supervised -input /data/labeled-corpus-train -output /data/labeled-corpus -lr 0.5 -epoch 40 -wordNgrams 2 -bucket 2000000 -dim 50;\
 	./fasttext test /data/labeled-corpus.bin /data/labeled-corpus-test 3"
 
+.PHONY: wordvectors
 wordvectors:		## Create WordVectors model
-	@echo Training the wordvectors model...
+	@echo $(RED)Training the wordvectors model... $(RESET)
 	kv data/corpus.txt data/corpus-ft
 
+.PHONY: train-keras
 train-keras:		## Train a Keras classifier
-	@echo Training classifier model...
+	@echo $(RED)Training Keras classifier model... $(RESET)
 	rm -rf $(TMP)/cachedir/*
 	train --gpu data/k-model.hdf data/corpus-ft data/corpus.txt --kg-url=$(API_HOST)/api/knowledge-graph/dump_all/
 
-full-train:	prepare-dump wordvectors train-keras
-	@echo Making the Keras Classifier Model
+.PHONY: full-train
+full-train:	prepare-dump wordvectors train-keras		## Full pipeline to train Keras model
+	@echo $(GREEN)Making the Keras Classifier Model $(RESET)
 
 fixtures:		## Make the fixtures needed for automated tests
 	prepare --es-url=http://localhost:9200/content nlpservice/tests/fixtures/corpus.txt
 	kv nlpservice/tests/fixtures/corpus.txt nlpservice/tests/fixtures/corpus-ft
+
+deploy-models:		## Makes an archive of trained model, to deploy
+	@echo $(GREEN)Creating models.tgz archive...$(RESET)
+	tar czf model.tgz data/k-model* data/corpus-ft*
