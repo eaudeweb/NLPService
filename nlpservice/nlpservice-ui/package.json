@@ -27,7 +27,7 @@
     "vue-template-compiler": "^2.5.21",
     "vuetify-loader": "^1.0.5",
     "lodash.defaultsdeep": ">=4.6.1",
-    "lodash": ">=4.17.13"
+    "lodash": ">=4.17.21"
   },
   "eslintConfig": {
     "root": true,
