@@ -40,7 +40,7 @@ plac==0.9.6
 plaster==1.0
 plaster-pastedeploy==0.7
 preshed==2.0.1
-protobuf==3.7.1
+protobuf==3.18.3
 pyemd==0.5.1
 Pyphen==0.9.5
 pyramid==1.10.4
